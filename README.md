@@ -86,27 +86,27 @@ const df2 = df.add_columns("Passed",[true,false,true]);
 ```ts
 const numeric = df.get_numericColumns()
 ```
-### `.describe()` - Returns a transposed summary table with aggregations of each numerical column
+#### `.describe()` - Returns a transposed summary table with aggregations of each numerical column
 ```ts
 const summary = df.describe()
 ```
-### `.iterrows()` - Returns a generator that yields `[row, index]` pairs.
+#### `.iterrows()` - Returns a generator that yields `[row, index]` pairs.
 ```ts
 for (let [row, index] of df.iterrows()){
     // Print the index and "Name" attribute of each row in the dataframe to the console
     console.log(index, row['Name'])
 }
 ```
-### `.shape(): [number, number]` - Returns the shape of the dataframe as `[rows, columns]`
-### `.get_columns(...keys:string[])` - Returns a new DataFrame with only the selected columns
+#### `.shape(): [number, number]` - Returns the shape of the dataframe as `[rows, columns]`
+#### `.get_columns(...keys:string[])` - Returns a new DataFrame with only the selected columns
 ```ts
 const shortDf = df.get_columns("Name","Sales")
 ```
-### `.drop(...keys:string[])` - Returns a new DataFrame without the selected columns
+#### `.drop(...keys:string[])` - Returns a new DataFrame without the selected columns
 ```ts
 const trimmedDf = df.drop("Address","Email")
 ```
-### `.groupBy(group_keys, valueCols, aggFuncs)` - Groups the DataFrame by one or more key columns and applies specified aggregation functions to numeric columns.
+#### `.groupBy(group_keys, valueCols, aggFuncs)` - Groups the DataFrame by one or more key columns and applies specified aggregation functions to numeric columns.
 **Parameters**
 - `group_key: (string | string[])` Column(s) to group by.
 - `valueCols (string[] | "all")`   List of columns to aggregate. Use `"all"` to automatically select all numeric columns (excluding the group keys).
@@ -119,16 +119,16 @@ df.groupBy("Department", ["Salary", "Bonus"], ["sum", "mean"]);
 This would return a DataFrame with:
 - One row per department
 - Columns like Salary_sum, Bonus_mean, etc.
-### `.filter(key: string, predicate: (value) => boolean)`:
+#### `.filter(key: string, predicate: (value) => boolean)`:
 Returns a new DataFrame including only rows where the given column value passes the predicate function.
 ```ts
 const adults = df.filter("Age", age => age > 18);
 ```
-### `.query(condition: (row: Row) => boolean)` - Filters the DataFrame using a custom condition applied to each row.
+#### `.query(condition: (row: Row) => boolean)` - Filters the DataFrame using a custom condition applied to each row.
 ```ts
 const highEarners = df.query(row => row["Salary"] > 100000);
 ```
-### `isin(column: string, values: Set<string | number | boolean>):` Returns a new DataFrame with rows where `column`  value is found in the provided set. 
+#### `isin(column: string, values: Set<string | number | boolean>):` Returns a new DataFrame with rows where `column`  value is found in the provided set. 
 - Great for filtering categorical matches
 ```ts
 const cities = new Set(["NYC", "LA"]);
@@ -137,26 +137,26 @@ const coastal = df.isin("City", cities);
 
 > 🔍 **When to use:** Use `.filter()` for simple column comparisons (e.g. `Age > 30`), `.isin()` for checking set membership (e.g. `State in ['CA', 'NY']`), and `.query()` for complex, multi-column or row-based logic.
 
-### `.operateColumns(operator: "* | + | - | /", col1: string, col2: string): number[]`
+#### `.operateColumns(operator: "* | + | - | /", col1: string, col2: string): number[]`
 Performs a mathematical operation between two numeric columns element-wise and returns a new array of results.
 - Operator must be one of either `"*"`, `"+"`, `"-"`, `"/"`
 ```ts
 const result = df.operateColumns("+", "Sales", "Tax");
 ```
-### `sortBy(columns: string[], ascending: boolean[] = [])` - Returns a new DataFrame sorted by one or more columns.
+#### `sortBy(columns: string[], ascending: boolean[] = [])` - Returns a new DataFrame sorted by one or more columns.
 - Provide ascending[i] = true or false for each corresponding column.
 - If ascending is not provided, all sorts default to ascending order.
 ```ts
 df.sortBy(["Department", "Salary"], [true, false]);
 ```
-### `merge(other: DataFrame, on: string[], how: "inner" | "left" | "outer" = "inner)` - Merges the current DataFrame with another one based on key columns, similar to SQL joins.
+#### `merge(other: DataFrame, on: string[], how: "inner" | "left" | "outer" = "inner)` - Merges the current DataFrame with another one based on key columns, similar to SQL joins.
 - `on`: list of column(s) to join on
 - `how`: join type (`"inner"`, `"left"`, or `"outer"`).
 ```ts
 const joined = df.merge(otherDf, ["EmployeeID"], "left");
 ```
-### `.to_array(headers: boolean = true)` - Converts the entire DataFrame (with headers, by default) into a 2D string|number|boolean array
-### `.to_json(headers: boolean = true)` - Converts the entire DataFrame (with headers, by defualt) into a JSON formatted string
+#### `.to_array(headers: boolean = true)` - Converts the entire DataFrame (with headers, by default) into a 2D string|number|boolean array
+#### `.to_json(headers: boolean = true)` - Converts the entire DataFrame (with headers, by defualt) into a JSON formatted string
 ### Supported Column Aggregation Methods
 - `.mean(column:string):number`
 - `.std_dev(column:string):number`
@@ -170,19 +170,19 @@ const joined = df.merge(otherDf, ["EmployeeID"], "left");
 ## Excel Integration Functions
 These utility functions help seamlessly convert between Excel ranges/sheets and your custom `DataFrame` class, making it easy to work with Excel data in Office Scripts.
 ---
-### 🔹 `df_from_range(range: ExcelScript.Range): DataFrame` - Converts an Excel range (including headers) into a `DataFrame`.
+#### 🔹 `df_from_range(range: ExcelScript.Range): DataFrame` - Converts an Excel range (including headers) into a `DataFrame`.
 ```ts
 const worksheet = workbook.getActiveWorksheet();
 const range = worksheet.getRange("A1:D10");
 const df = frosts.df_from_range(range);
 ```
 ---
-### 🔹 `df_from_sheet(sheet: ExcelScript.Worksheet): DataFrame` - Grabs the entire used range of a worksheet and converts it into a `DataFrame`
+#### 🔹 `df_from_sheet(sheet: ExcelScript.Worksheet): DataFrame` - Grabs the entire used range of a worksheet and converts it into a `DataFrame`
 ```ts
 const df = df_from_sheet(workbook.getWorksheet("Sheet1"));
 ```
 ---
-### 🔹 `write_df_to_sheet(df: DataFrame, workbook: ExcelScript.Workbook, sheet_name?: string, reset_sheet?: boolean, to_table?: boolean, start_cell?: string)`
+#### 🔹 `write_df_to_sheet(df: DataFrame, workbook: ExcelScript.Workbook, sheet_name?: string, reset_sheet?: boolean, to_table?: boolean, start_cell?: string)`
 Writes a `DataFrame` to a worksheet in the workbook. Optionally clears the sheet, converts to an Excel table, and chooses the starting cell.
 - `df`: The DataFrame to write.
 - `workbook`: The workbook from the OSTS engine.
