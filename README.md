@@ -1,5 +1,6 @@
 # frosts
-<img src='misc/frosts_logo.svg'/>
+<img src="misc/frosts_logo.svg" width="30%" height="auto"/> 
+
 ## Description
 An OfficeScript-native basic data science library designed streamline Power Automate Excel automation, and increase the ease of use for aggregating, merging, and describing datasets entirely in Excel with no dependencies.
 
@@ -39,8 +40,6 @@ An OfficeScript-native basic data science library designed streamline Power Auto
 # 🧮 frosts.DataFrame
 
 A lightweight `DataFrame` class inspired by pandas, designed for tabular data manipulation, exploration, and transformation.
-
----
 
 ## 🚀 Getting Started
 
