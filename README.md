@@ -1,7 +1,7 @@
 <img src="misc/frosts_logo.svg" width="30%" height="auto"/> 
 
-## Frosts - An incredibly convenient built in data science framework in Excel Office Scripts
-An OfficeScript-native basic data science library designed streamline Power Automate Excel automation, and increase the ease of use for aggregating, merging, and describing datasets entirely in Excel with no dependencies.
+## Frosts - An incredibly convenient pandas-inspired data science framework in Excel Office Scripts
+An OfficeScript-native basic data science library designed to streamline Power Automate Excel automation, and increase the ease of use for aggregating, merging, and describing datasets entirely in Excel.
 
 # 📖 Table of Contents
 
