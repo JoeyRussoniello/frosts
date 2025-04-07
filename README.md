@@ -18,17 +18,17 @@ An OfficeScript-native basic data science library designed streamline Power Auto
      - [.describe()](#describe---returns-a-transposed-summary-table-with-aggregations-of-each-numerical-column)  
      - [.iterrows()](#iterrows---returns-a-generator-that-yields-row-index-pairs)  
      - [.shape()](#shape-number-number---returns-the-shape-of-the-dataframe-as-rows-columns)  
-     - [.get_columns()](#get_columnsspread-keysstring---returns-a-new-dataframe-with-only-the-selected-columns)  
-     - [.drop()](#dropspread-keysstring---returns-a-new-dataframe-without-the-selected-columns)  
-     - [.groupBy()](#groupbygroup_keys-valuecols-aggfuncs---groups-the-dataframe-by-one-or-more-key-columns-and-applies-specified-aggregation-functions)
-     - [.filter()](#filterkey-string-predicate-value--boolean---returns-a-new-dataframe-including-only-rows-where-the-column-value-passes-the-predicate)
-     - [.query()](#querycondition-row-row--boolean---filters-the-dataframe-using-a-custom-condition-applied-to-each-row)  
-     - [.isin()](#isincolumn-string-values-setstring--number--boolean---returns-a-new-dataframe-with-rows-where-column-value-is-in-the-set)  
-     - [.operateColumns()](#operatecolumnsoperator-----col1-string-col2-stringnumber---performs-element-wise-math-between-two-columns)  
-     - [.sortBy()](#sortbycolumns-string-ascending-boolean--returns-a-new-dataframe-sorted-by-the-columns)  
-     - [.merge()](#mergeother-dataframe-on-string-how-inner--left--outer--inner---merges-two-dataframes-on-a-key-similar-to-sql-joins)  
-     - [.to_array()](#to_arrayheaders-boolean--true---converts-the-entire-dataframe-into-a-2d-array)  
-     - [.to_json()](#to_jsonheaders-boolean--true---converts-the-dataframe-into-a-json-string)  
+     - [.get_columns()](#get_columnskeysstring---returns-a-new-dataframe-with-only-the-selected-columns)
+     - [.drop()](#dropkeysstring---returns-a-new-dataframe-without-the-selected-columns)  
+     - [.groupBy()](#groupbygroup_keys-valuecols-aggfuncs---groups-the-dataframe-by-one-or-more-key-columns-and-applies-specified-aggregation-functions-to-numeric-columns)
+     - [.filter()](#filterkey-string-predicate-value--boolean)
+     - [.query()](#querycondition-row-row--boolean---filters-the-dataframe-using-a-custom-condition-applied-to-each-row) 
+     - [.isin()](#isincolumn-string-values-setstring--number--boolean-returns-a-new-dataframe-with-rows-where-column--value-is-found-in-the-provided-set)
+     - [.operateColumns()](#operatecolumnsoperator---------col1-string-col2-string-number)
+     - [.sortBy()](#sortbycolumns-string-ascending-boolean-----returns-a-new-dataframe-sorted-by-one-or-more-columns)  
+     - [.merge()](#mergeother-dataframe-on-string-how-inner--left--outer--inner---merges-the-current-dataframe-with-another-one-based-on-key-columns-similar-to-sql-joins)
+     - [.to_array()](#to_arrayheaders-boolean--true---converts-the-entire-dataframe-with-headers-by-default-into-a-2d-stringnumberboolean-array)
+     - [.to_json()](#to_jsonheaders-boolean--true---converts-the-entire-dataframe-with-headers-by-defualt-into-a-json-formatted-string)
    - [Supported Column Aggregation Methods](#supported-column-aggregation-methods)  
 5. [📊 Excel Integration Functions](#excel-integration-functions)  
    - [`df_from_range()`](#-df_from_rangerange-excelscriptrange-dataframe---converts-an-excel-range-including-headers-into-a-dataframe)  
@@ -165,10 +165,10 @@ const joined = df.merge(otherDf, ["EmployeeID"], "left");
 - `.median(column: string):number`
 - `.quantile(column:string, q:number):number`: Returns a specified quantile (Ex: 25, 50, 75)
 - `.count(column: string):number`
-###
+---
 
 ## Excel Integration Functions
-These utility functions help seamlessly convert between Excel ranges/sheets and your custom `DataFrame` class, making it easy to work with Excel data in Office Scripts.
+These utility functions help seamlessly read/write data to and from Excel Workbooks
 ---
 #### 🔹 `df_from_range(range: ExcelScript.Range): DataFrame` - Converts an Excel range (including headers) into a `DataFrame`.
 ```ts
@@ -179,7 +179,7 @@ const df = frosts.df_from_range(range);
 ---
 #### 🔹 `df_from_sheet(sheet: ExcelScript.Worksheet): DataFrame` - Grabs the entire used range of a worksheet and converts it into a `DataFrame`
 ```ts
-const df = df_from_sheet(workbook.getWorksheet("Sheet1"));
+const df = frosts.df_from_sheet(workbook.getWorksheet("Sheet1"));
 ```
 ---
 #### 🔹 `write_df_to_sheet(df: DataFrame, workbook: ExcelScript.Workbook, sheet_name?: string, reset_sheet?: boolean, to_table?: boolean, start_cell?: string)`
@@ -190,3 +190,9 @@ Writes a `DataFrame` to a worksheet in the workbook. Optionally clears the sheet
 - `reset_sheet` *(optional)*: Whether to clear the sheet before writing (default: true).
 - `to_table (optional)` *(optional)*: Whether to convert the output range into a table (default: true).
 - `start_cell (optional)` *(optional)*: Cell address to begin writing at (default: "A1").
+```ts
+const df = frosts.df_from_sheet(workbook.getActiveWorksheet());
+//Add a worksheet called summary statistics and place the Dataframe
+//description in it
+frosts.write_df_to_sheet(df.describe(),workbook,"Summary Statistics")
+```
