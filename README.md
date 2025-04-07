@@ -1,5 +1,5 @@
 # frosts
-
+<img src='misc/frosts_logo.svg'/>
 ## Description
 An OfficeScript-native basic data science library designed streamline Power Automate Excel automation, and increase the ease of use for aggregating, merging, and describing datasets entirely in Excel with no dependencies.
 
