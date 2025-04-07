@@ -119,6 +119,12 @@ df.groupBy("Department", ["Salary", "Bonus"], ["sum", "mean"]);
 This would return a DataFrame with:
 - One row per department
 - Columns like Salary_sum, Bonus_mean, etc.
+
+> **🔹 Note:**  
+> The behavior of `groupby()` depends on the internal separator defined in the `frosts` namespace.  
+> By default, the separator is `'~~~'`, but this can be changed using `frosts.set_separator(newSeparator: string)` if any column headers
+> contain that value.  
+
 #### `.filter(key: string, predicate: (value) => boolean)`:
 Returns a new DataFrame including only rows where the given column value passes the predicate function.
 ```ts
@@ -167,8 +173,8 @@ const joined = df.merge(otherDf, ["EmployeeID"], "left");
 - `.count(column: string):number`
 ---
 
-## Excel Integration Functions
-These utility functions help seamlessly read/write data to and from Excel Workbooks
+## Other Functions
+These utility functions help seamlessly read/write data to and from Excel Workbooks, or configure the frosts namespace
 ---
 #### 🔹 `df_from_range(range: ExcelScript.Range): DataFrame` - Converts an Excel range (including headers) into a `DataFrame`.
 ```ts
@@ -196,3 +202,9 @@ const df = frosts.df_from_sheet(workbook.getActiveWorksheet());
 //description in it
 frosts.write_df_to_sheet(df.describe(),workbook,"Summary Statistics")
 ```
+---
+#### 🔹 `get_separator()`
+Returns the current string used as the `separator` in internal frosts operations. (Default: `"~~~"`)
+#### 🔹 `set_separator(separator:string)`
+Modifies the current string used as the `separator` in internal frosts operations
+- Useful when `"~~~"` happens to be included in a column name/value.

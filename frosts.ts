@@ -1,4 +1,19 @@
 namespace frosts{
+  //DEFAULT SEPARATOR FOR MULTIPLE JOINS
+  let SEPARATOR = "~~~";
+
+  export function get_separator():string{
+    return SEPARATOR;
+  }
+  export function set_separator(separator:string){
+    SEPARATOR = separator;
+  }
+  function column_violates_separator(key:string){
+    if (key.includes(get_separator())){
+      throw new Error(`Input key: ${key} contains the interal frost separator ${get_separator()}, this may cause unintended behavior. \n Please modify the column name using df.rename(), or the separator value using the frosts.set_separator()`);
+    }
+  }
+
   function detectTypeFromString(s: string): string {
     if (!s) {
       s = "";
@@ -44,9 +59,9 @@ namespace frosts{
     if (reset_sheet){
       Sheet.getUsedRange()?.setValue("");
     }
-    const arr = df.__array();
+    const arr = df.to_array();
     let [n_rows, n_cols] = df.shape();
-    let import_range = Sheet.getRange(start_cell).getResizedRange(n_rows - 1, n_cols - 1)
+    let import_range = Sheet.getRange(start_cell).getResizedRange(n_rows, n_cols - 1)
     import_range.setValues(arr);
 
     if (to_table){
@@ -54,7 +69,29 @@ namespace frosts{
     }
     console.log(`Dataframe Written to ${import_range.getAddressLocal()}`);
   }
-  type Row = { [key: string]: string | number | boolean };
+  export function write_df_to_table(df:DataFrame, table:ExcelScript.Table){
+    let table_cols = table.getColumns()
+
+    if (table_cols.length > df.columns.length){
+      let overflow_cols = table_cols.slice(df.columns.length);
+      let starting_col = overflow_cols[0].getRange().getEntireColumn();
+
+      let deletion_range = starting_col
+      if (overflow_cols.length > 1){
+        deletion_range = starting_col.getResizedRange(0,overflow_cols.length - 1)
+      }
+      deletion_range.delete(ExcelScript.DeleteShiftDirection.left);
+    }
+
+    table.getRangeBetweenHeaderAndTotal().setValue("");
+    let start_cell = table.getRange().getCell(0,0);
+    let [n_rows, n_cols] = df.shape();
+    
+    const arr = df.to_array();
+    start_cell.getResizedRange(n_rows, n_cols - 1).setValues(arr);
+    //table.getHeaderRowRange();
+  }
+  export type Row = { [key: string]: string | number | boolean };
   export class DataFrame {
     columns: string[]
     __headers: Set<String>
@@ -87,8 +124,14 @@ namespace frosts{
       }
     }
 
-    __array(): (string | number | boolean)[][] {
-      return [this.columns, ...this.values.map(row => Object.values(row))];
+    to_array(headers: boolean = true): (string | number | boolean)[][] {
+      /* Convert the values of the df into a 2D string|number|boolean array */
+      if (headers){
+        return [this.columns, ...this.values.map(row => Object.values(row))];
+      }
+      else{
+        return this.values.map(row => Object.values(row))
+      }
     }
 
     __check_membership(key: string) {
@@ -109,6 +152,8 @@ namespace frosts{
         .map(row => row[column])
         .filter(val => typeof val === "number") as number[];
     }
+
+
 
     add_column(columnName:string, values:(string|number|boolean)[]):DataFrame{
       if (values.length != this.values.length){
@@ -143,7 +188,7 @@ namespace frosts{
       return new DataFrame([new_columns,...new_values]);
     }
     shape(): [number, number] {
-      return [this.values.length + 1, this.columns.length]
+      return [this.values.length, this.columns.length]
     }
 
     get_columns(...keys: string[]): DataFrame {
@@ -270,45 +315,60 @@ namespace frosts{
     describe(): DataFrame {
       const numericCols = this.getNumericColumns();
 
-      const stats = ["Count", "Mean", "Standard Deviation", "Minimum","1st Quartile","Median","3rd Quartile","Maximum"];
+      const stats = [
+        "Count",
+        "Mean",
+        "Standard Deviation",
+        "Minimum",
+        "1st Quartile",
+        "Median",
+        "3rd Quartile",
+        "Maximum"
+      ];
+
+      const summaryMap: { [col: string]: (string | number)[] } = {};
+
+      for (let col of numericCols) {
+        summaryMap[col] = [];
+
+        for (let stat of stats) {
+          switch (stat) {
+            case "Count":
+              summaryMap[col].push(this.count(col));
+              break;
+            case "Mean":
+              summaryMap[col].push(this.mean(col));
+              break;
+            case "Standard Deviation":
+              summaryMap[col].push(this.std_dev(col));
+              break;
+            case "Minimum":
+              summaryMap[col].push(this.min(col));
+              break;
+            case "1st Quartile":
+              summaryMap[col].push(this.quantile(col, 25));
+              break;
+            case "Median":
+              summaryMap[col].push(this.median(col));
+              break;
+            case "3rd Quartile":
+              summaryMap[col].push(this.quantile(col, 75));
+              break;
+            case "Maximum":
+              summaryMap[col].push(this.max(col));
+              break;
+          }
+        }
+      }
 
       const summaryRows: (string | number)[][] = [];
 
-      for (let stat of stats) {
-        const row: (string | number)[] = [stat];
-
-        for (let col of numericCols) {
-          switch (stat) {
-            case "Count":
-              row.push(this.count(col));
-              break;
-            case "Mean":
-              row.push(this.mean(col));
-              break;
-            case "Standard Deviation":
-              row.push(this.std_dev(col));
-              break;
-            case "Minimum":
-              row.push(this.min(col));
-              break;
-            case "Maximum":
-              row.push(this.max(col));
-              break;
-            
-            case "1st Quartile":
-              row.push(this.quantile(col,25));
-            case "Median": 
-              row.push(this.median(col));
-            case "3rd Quartile":
-              row.push(this.quantile(col,75));
-          }
-        }
-
-        summaryRows.push(row);
+      for (let col of numericCols) {
+        summaryRows.push([col, ...summaryMap[col]]);
       }
 
       return new DataFrame([
-        ["Column:", ...numericCols],
+        ["Column", ...stats],
         ...summaryRows
       ]);
     }
@@ -327,6 +387,7 @@ namespace frosts{
       }
 
       keys.forEach(key => this.__check_membership(key));
+      keys.forEach(key => column_violates_separator(key));
 
       let valueColumns: string[];
       if (typeof (valueCols) == "string") {
@@ -358,7 +419,7 @@ namespace frosts{
       const grouped: { [groupKey: string]: Row[] } = {};
 
       for (let row of this.values) {
-        const groupKey = keys.map(k => row[k]).join("||");
+        const groupKey = keys.map(k => row[k]).join(SEPARATOR);
         if (!grouped[groupKey]) {
           grouped[groupKey] = [];
         }
@@ -380,7 +441,7 @@ namespace frosts{
           ...rows.map(r => this.columns.map(col => r[col])),
         ]);
 
-        const keyParts = groupKey.split("||");
+        const keyParts = groupKey.split(SEPARATOR);
         const aggregatedRow: (string | number | boolean)[] = [...keyParts];
 
         valueColumns.forEach((col, idx) => {
@@ -565,8 +626,26 @@ namespace frosts{
       return new DataFrame(dataArray);
     }
 
-    to_json():string{
-      return JSON.stringify(this.__array());
+    iterrows(): [Row, number][]{
+      return this.values.map((row, idx) => [row, idx]);
+    }
+
+    to_json(headers:boolean = true):string{
+      return JSON.stringify(this.to_array(headers));
+    }
+
+    rename(columnsMap: { [oldName: string]: string }): DataFrame {
+      // Make sure all keys in columnsMap exist in the DataFrame
+      for (let oldCol in columnsMap) {
+        this.__check_membership(oldCol);
+      }
+
+      // Create new columns array by replacing old column names with new ones
+      const newColumns = this.columns.map(col => columnsMap[col] || col);
+      
+      // Rebuild the data array with updated headers
+
+      return new DataFrame([newColumns, ...this.to_array(false)]);
     }
   }
 }
@@ -580,6 +659,9 @@ function main(workbook: ExcelScript.Workbook) {
   
   frosts.write_df_to_sheet(df.describe(), workbook, "New Worksheet"); //Save decription to New Worksheet
   */
+  
+
+  const df = frosts.df_from_sheet(workbook.getWorksheet("Sheet1"));
+  frosts.set_separator("###");
+  frosts.write_df_to_sheet(df.groupBy("~~~Test Column","all","sum"),workbook,"Grouped");
 }
-
-
