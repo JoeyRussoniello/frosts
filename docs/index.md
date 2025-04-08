@@ -14,6 +14,12 @@
 
 - [Getting Started](getting-started.md)
 - [API Reference](api.md)
+  - [DataFrame](api_reference/dataframe_index.md)
+    - [Basic Operations](api_reference/df_methods/basic_operations.md)
+    - [Filtering](api_reference/df_methods/filtering.md)
+    - [Aggregations](api_reference/df_methods/aggregation.md)
+    - [Merging](api_reference/df_methods/merging.md)
+  - [Excel Integration Functions](api_reference/other_functions.md)
 
 ---
 
