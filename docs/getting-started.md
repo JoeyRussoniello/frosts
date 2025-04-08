@@ -1,16 +1,16 @@
 # ⚙️ Installation Instructions
+
 Implementing frosts in your office scripts is incredibly easy! Either:
+
 - Download `frosts.osts`, and move into your Office Scripts directory (likely: `"~/OneDrive/Documents/Office Scripts"' or similar)
 - Copy and paste the contents of `frosts.ts` into an empty Office Scripts file
 
-*Unfortunately the current Office Scripts engine does not support imports, so a frost_template file will have to be copied for each project until this feature gets added*
-# 🧮 frosts.DataFrame
-
-A lightweight `DataFrame` class inspired by pandas, designed for tabular data manipulation, exploration, and transformation.
+> *Unfortunately the current Office Scripts engine does not support imports, so a frost_template file will have to be copied for each project until this feature gets added*
 
 ## 🚀 Getting Started
 
-Create a `DataFrame` by using a frost helper function
+Create a `DataFrame` by using one of the frost helper functions
+
 ```ts
 const selectedSheeet = workbook.getActiveWorksheet();
 // Create a df from the entire used range in selectedSheet
