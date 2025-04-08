@@ -92,11 +92,12 @@ df.values[0]["IsActive"] = false;
 
 ## Methods
 
-The methods of the frosts.DataFrame class are organized into four main categories, each with its own dedicated page for detailed documentation:
+The methods of the frosts.DataFrame class are organized into five main categories, each with its own dedicated page for detailed documentation:
 
 - [Basic Operations](df_methods/basic_operations.md): Methods for accessing and modifying the DataFrame.
 - [Filtering](df_methods/filtering.md): Methods for selecting and filtering rows based on conditions.
 - [Aggregations](df_methods/aggregation.md): Methods for summarizing and calculating statistics on data.
 - [Merging](df_methods/merging.md): Methods for combining DataFrames.
+- [Imports/Exports](df_methods/outputs.md): Ways to import separated values to DataFrames, and export results for PowerAutomate/further scripting
 
 Please refer to the corresponding pages for detailed information and examples for each category.

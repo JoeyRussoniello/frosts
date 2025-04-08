@@ -19,6 +19,7 @@
     - [Filtering](api_reference/df_methods/filtering.md)
     - [Aggregations](api_reference/df_methods/aggregation.md)
     - [Merging](api_reference/df_methods/merging.md)
+    - [Imports/Exports](api_reference/df_methods//outputs.md)
   - [Excel Integration Functions](api_reference/other_functions.md)
 
 ---

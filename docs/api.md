@@ -35,7 +35,7 @@ const newDf = df.copy()
 const df2 = df.add_column("Passed",[true,false,true]);
 ```
 
-### `.add_formula_column(columnName:string, formula:string)` - Returns a new DataFrame with a table formula column
+#### `.add_formula_column(columnName:string, formula:string)` - Returns a new DataFrame with a table formula column
 
 - Add an Excel table-style formula to your df, will be evaluated on writing the dataframe.
   - Formulas can also be evaluated on command using the [`frosts.hardcode_formulas()`](#-hardcode_formulasdfdataframe-workbookexcelscriptworkbook) command.
