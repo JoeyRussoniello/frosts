@@ -4,8 +4,7 @@
 An OfficeScript-native basic data science library designed to streamline Power Automate Excel automation, and increase the ease of use for aggregating, merging, and describing datasets entirely in Excel.
 
 # 📖 Table of Contents
-
-1. [📘 Description](#description)  
+1. [⚙️ Installation Instructions](#-installationinstructions)
 2. [🧮 frosts.DataFrame](#-frostsdataframe)  
 3. [🚀 Getting Started](#-getting-started)  
 4. [📚 API Reference](#-api-reference)  
@@ -38,14 +37,29 @@ An OfficeScript-native basic data science library designed to streamline Power A
   - [`write_df_to_sheet()`](#-write_df_to_sheetdf-dataframe-workbook-excelscriptworkbook-sheet_name-string-reset_sheet-boolean-to_table-boolean-start_cell-string)
   - [`hardcode_formulas()`](#-hardcode_formulasdfdataframe-workbookexcelscriptworkbook)
 
+# ⚙️ Installation Instructions
+Implementing frosts in your office scripts is incredibly easy! Either:
+- Download `frosts.osts`, and move into your Office Scripts directory (likely: `"~/OneDrive/Documents/Office Scripts"' or similar)
+- Copy and paste the contents of `frosts.ts` into an empty Office Scripts file
 
+*Unfortunately the current Office Scripts engine does not support imports, so a frost_template file will have to be copied for each project until this feature gets added*
 # 🧮 frosts.DataFrame
 
 A lightweight `DataFrame` class inspired by pandas, designed for tabular data manipulation, exploration, and transformation.
 
 ## 🚀 Getting Started
 
-Create a `DataFrame` by passing in a 2D array where the **first row is the header**:
+Create a `DataFrame` by using a frost helper function
+```ts
+const selectedSheeet = workbook.getActiveWorksheet();
+// Create a df from the entire used range in selectedSheet
+let df_from_sheet = frosts.df_from_sheet(selectedSheet);
+
+//Create a df from a specified range;
+let df_from_range = frosts.df_from_range(selectedSheet.getRange("A1:D100"));
+```
+
+Or by passing in a 2D array where the **first row is the header**:
 
 ```ts
 const data = [
@@ -57,6 +71,8 @@ const data = [
 
 const df = new frosts.DataFrame(data);
 ```
+
+
 ---
 ## 📚 API Reference
 ### 🔹 Constructor
