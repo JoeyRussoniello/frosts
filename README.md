@@ -36,7 +36,7 @@ An OfficeScript-native basic data science library designed to streamline Power A
   - [`df_from_sheet()`](#-df_from_sheetsheet-excelscriptworksheet-dataframe---grabs-the-entire-used-range-of-a-worksheet-and-converts-it-into-a-dataframe)  
   - [`write_df_to_sheet()`](#-write_df_to_sheetdf-dataframe-workbook-excelscriptworkbook-sheet_name-string-reset_sheet-boolean-to_table-boolean-start_cell-string)
   - [`hardcode_formulas()`](#-hardcode_formulasdfdataframe-workbookexcelscriptworkbook)
-
+6. [🛠️ Contributions](#-contributions)
 # ⚙️ Installation Instructions
 Implementing frosts in your office scripts is incredibly easy! Either:
 - Download `frosts.osts`, and move into your Office Scripts directory (likely: `"~/OneDrive/Documents/Office Scripts"' or similar)
@@ -256,3 +256,25 @@ Returns the current string used as the `separator` in internal frosts operations
 #### 🔹 `set_separator(separator:string)`
 Modifies the current string used as the `separator` in internal frosts operations
 - Useful when `"~~~"` happens to be included in a column name/value.
+
+# 🛠️ Contributions
+Contributions are welcome and appreciated! If you have suggestions for improvements, bug fixes, or new features, please follow these steps:
+
+1. **Fork** the repository.
+2. **Create a branch** for your feature or bug fix.
+3. **Commit** your changes with clear messages.
+4. **Push** to your fork.
+5. **Open a Pull Request** and describe what you’ve done.
+
+### Guidelines
+
+- Follow the project's code style and conventions.
+- Keep your changes focused and minimal.
+- Write clear, descriptive commit messages.
+- If applicable, update documentation or add tests.
+
+### Need Help?
+
+If you're new to open source or need guidance, feel free to [open an issue](https://github.com/JoeyRussoniello/frosts/issues) or ask questions in the discussion area.
+
+Thank you for helping make this project better! 🙌
