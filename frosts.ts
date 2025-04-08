@@ -1,6 +1,8 @@
 namespace frosts{
   //DEFAULT SEPARATOR FOR MULTIPLE JOINS
   let SEPARATOR = "~~~";
+  //ABSTRACT DEV SHEET NAME FOR FORMULA HARDCODING
+  const DEV_SHEET_NAME = "___DEV_SHEET_NULL";
 
   export function get_separator():string{
     return SEPARATOR;
@@ -61,13 +63,26 @@ namespace frosts{
     }
     const arr = df.to_array();
     let [n_rows, n_cols] = df.shape();
-    let import_range = Sheet.getRange(start_cell).getResizedRange(n_rows, n_cols - 1)
+    let import_range = Sheet.getRange(start_cell).getResizedRange(n_rows, n_cols - 1);
+
+    //Import Just Headers first for Formula Calculation
+    Sheet.getRange(start_cell).getResizedRange(0,n_cols- 1).setValues([df.columns]);
+    //Then set a table to the import range
+    if (to_table) {
+      try{
+        let table = Sheet.addTable(import_range, true);
+      }
+      catch {
+        console.log(`A table already exists at ${import_range.getAddress()}, proceeding anyways.`);
+      }
+    }
+    //Import all values (including the headers again);
     import_range.setValues(arr);
 
-    if (to_table){
-      let table = Sheet.addTable(import_range,true);
+    //Print a helpful message if this export wasn't done as a helper method
+    if (import_range.getWorksheet().getName() != DEV_SHEET_NAME){
+      console.log(`Dataframe Written to ${import_range.getAddressLocal()}`);
     }
-    console.log(`Dataframe Written to ${import_range.getAddressLocal()}`);
   }
   export function write_df_to_table(df:DataFrame, table:ExcelScript.Table){
     let table_cols = table.getColumns()
@@ -91,6 +106,19 @@ namespace frosts{
     start_cell.getResizedRange(n_rows, n_cols - 1).setValues(arr);
     //table.getHeaderRowRange();
   }
+
+  export function hardcode_formulas(df:DataFrame, workbook:ExcelScript.Workbook){
+    /*
+      Calculate and Hardcode all formula results in the input df. 
+      Used to aggregate formula based calculations
+    */
+    write_df_to_sheet(df,workbook,DEV_SHEET_NAME);
+    let ExportSheet = workbook.getWorksheet(DEV_SHEET_NAME);
+    let calculated_df = new DataFrame(ExportSheet.getUsedRange().getValues());
+    df.__assign_properties(...calculated_df.__extract_properties());
+    ExportSheet.delete();
+  }
+
   export type Row = { [key: string]: string | number | boolean };
   export class DataFrame {
     columns: string[]
@@ -124,6 +152,8 @@ namespace frosts{
       }
     }
 
+    
+
     to_array(headers: boolean = true): (string | number | boolean)[][] {
       /* Convert the values of the df into a 2D string|number|boolean array */
       if (headers){
@@ -136,7 +166,7 @@ namespace frosts{
 
     __check_membership(key: string) {
       if (!(this.__headers.has(key))) {
-        throw RangeError(`Key: "${key}" not found in df.`);
+        throw RangeError(`Key: "${key}" not found in df.\nDf Headers: ${this.columns}`);
       }
     }
 
@@ -153,7 +183,62 @@ namespace frosts{
         .filter(val => typeof val === "number") as number[];
     }
 
+    __extract_properties():[string[], {[key:string]:string}, Row[]]{
+      // Get all of the developer properties of the DataFrame
+      return [this.columns, this.dtypes, this.values];
+    }
+    __assign_properties(columns:string[], dtypes:{[key:string]:string}, values: Row[]){
+      /* Manually overwrite all of the properties of the DataFrame */
+      this.columns = columns;
+      this.dtypes = dtypes;
+      this.values = values;
+      this.__headers = new Set(columns);
+    }
 
+    concat(other:DataFrame, columnSelection: ("inner" | "outer" | "left") = "outer"):DataFrame{
+      let other_cols = other.columns;
+
+      let columns:string[];
+      switch (columnSelection){
+        case "inner":
+          //List of columns is all shared columns;
+          columns = this.columns.filter(col => other.__headers.has(col));
+          break;
+        case "outer":
+          let a = this.columns;
+          let b = other.columns;
+
+          //List of columns is all from a, then all from b that aren't in a.
+          columns = a.concat(b.filter(col => !this.__headers.has(col)))
+          break;
+        case "left":
+          //List of columns is simply the columns in this df
+          columns = this.columns;
+          break;
+      }
+
+      // Helper to align rows to the unified column set
+      function alignRow(row: Row, columns: string[]): Row {
+        const aligned: Row = {};
+        for (const col of columns) {
+          aligned[col] = row[col] ?? null; // Fill missing with null
+        }
+        return aligned;
+      }
+      
+      const newData: Row[] = [
+        ...this.values.map(row => alignRow(row, columns)),
+        ...other.values.map(row => alignRow(row, columns)),
+      ];
+
+      // Convert back to array-of-arrays for constructor: [columns, ...rows]
+      const dataAsMatrix: (string | number | boolean | null)[][] = [
+        columns,
+        ...newData.map(row => columns.map(col => row[col])),
+      ];
+
+      return new DataFrame(dataAsMatrix);
+    }
 
     add_column(columnName:string, values:(string|number|boolean)[]):DataFrame{
       if (values.length != this.values.length){
@@ -172,7 +257,7 @@ namespace frosts{
       let dtype = detectColumn(values as string[]);
       new_df.dtypes[columnName] = dtype;
 
-      new_df.values.map((row, index) => {
+      new_df.values.forEach((row, index) => {
         row[columnName] = values[index]
       });
 
@@ -180,12 +265,8 @@ namespace frosts{
     }
 
     copy(): DataFrame {
-      // Create a deep copy of all necessary internal data structures
-      let new_values:(string|number|boolean)[][] = JSON.parse(JSON.stringify(this.values)); // Deep copy of values
-      let new_columns = [...this.columns]; // Shallow copy of columns (array is simple)
-
-      // Create a new DataFrame using the copied structures
-      return new DataFrame([new_columns,...new_values]);
+      // Use JSON to force a deep copy
+      return new DataFrame(JSON.parse(JSON.stringify(this.to_array())));
     }
     shape(): [number, number] {
       return [this.values.length, this.columns.length]
@@ -647,6 +728,14 @@ namespace frosts{
 
       return new DataFrame([newColumns, ...this.to_array(false)]);
     }
+
+    add_formula_column(columnName:string, formula:string):DataFrame{
+      /* Append a table-style formula column
+      Example: [@Col1] + [@Col2]
+      */
+      let formula_col:string[] = Array(this.shape()[0]).fill(formula);
+      return this.add_column(columnName, formula_col);
+    }
   }
 }
 
@@ -660,8 +749,11 @@ function main(workbook: ExcelScript.Workbook) {
   frosts.write_df_to_sheet(df.describe(), workbook, "New Worksheet"); //Save decription to New Worksheet
   */
   
-
-  const df = frosts.df_from_sheet(workbook.getWorksheet("Sheet1"));
-  frosts.set_separator("###");
-  frosts.write_df_to_sheet(df.groupBy("~~~Test Column","all","sum"),workbook,"Grouped");
+  let sheet_names = ["Sheet2","Sheet3"];
+  let sheets = sheet_names.map(s => workbook.getWorksheet(s));
+  let [df1, df2] = sheets.map(s => frosts.df_from_sheet(s));
+  
+  let both = df1.concat(df2,"outer");
+  console.log(both);
 }
+

@@ -13,7 +13,8 @@ An OfficeScript-native basic data science library designed to streamline Power A
    - [Properties](#-properties)  
    - [Methods](#-methods)  
      - [.copy()](#copy---returns-a-deep-copy-of-the-dataframe)  
-     - [.add_columns()](#add_columnscolumnname-string-values-stringnumberboolean---returns-a-new-dataframe-with-the-input-column)  
+     - [.add_column()](#add_columncolumnname-string-values-stringnumberboolean---returns-a-new-dataframe-with-the-input-column)  
+     - [.add_formula_column()](#add_formula_columncolumnnamestring-formulastring---returns-a-new-dataframe-with-a-table-formula-column)
      - [.get_numericColumns()](#get_numericcolumns-string---returns-an-array-of-the-columns-with-numeric-data)  
      - [.describe()](#describe---returns-a-transposed-summary-table-with-aggregations-of-each-numerical-column)  
      - [.iterrows()](#iterrows---returns-a-generator-that-yields-row-index-pairs)  
@@ -27,13 +28,15 @@ An OfficeScript-native basic data science library designed to streamline Power A
      - [.operateColumns()](#operatecolumnsoperator---------col1-string-col2-string-number)
      - [.sortBy()](#sortbycolumns-string-ascending-boolean-----returns-a-new-dataframe-sorted-by-one-or-more-columns)  
      - [.merge()](#mergeother-dataframe-on-string-how-inner--left--outer--inner---merges-the-current-dataframe-with-another-one-based-on-key-columns-similar-to-sql-joins)
+     - [.concat()](#concatotherdataframe-columnselection-innerouterleft--outer---append-two-dataframes-by-concatenating-their-rows)
      - [.to_array()](#to_arrayheaders-boolean--true---converts-the-entire-dataframe-with-headers-by-default-into-a-2d-stringnumberboolean-array)
      - [.to_json()](#to_jsonheaders-boolean--true---converts-the-entire-dataframe-with-headers-by-defualt-into-a-json-formatted-string)
    - [Supported Column Aggregation Methods](#supported-column-aggregation-methods)  
 5. [📊 Excel Integration Functions](#excel-integration-functions)  
-   - [`df_from_range()`](#-df_from_rangerange-excelscriptrange-dataframe---converts-an-excel-range-including-headers-into-a-dataframe)  
-   - [`df_from_sheet()`](#-df_from_sheetsheet-excelscriptworksheet-dataframe---grabs-the-entire-used-range-of-a-worksheet-and-converts-it-into-a-dataframe)  
-   - [`write_df_to_sheet()`](#-write_df_to_sheetdf-dataframe-workbook-excelscriptworkbook-sheet_name-string-reset_sheet-boolean-to_table-boolean-start_cell-string)
+  - [`df_from_range()`](#-df_from_rangerange-excelscriptrange-dataframe---converts-an-excel-range-including-headers-into-a-dataframe)  
+  - [`df_from_sheet()`](#-df_from_sheetsheet-excelscriptworksheet-dataframe---grabs-the-entire-used-range-of-a-worksheet-and-converts-it-into-a-dataframe)  
+  - [`write_df_to_sheet()`](#-write_df_to_sheetdf-dataframe-workbook-excelscriptworkbook-sheet_name-string-reset_sheet-boolean-to_table-boolean-start_cell-string)
+  - [`hardcode_formulas()`](#-hardcode_formulasdfdataframe-workbookexcelscriptworkbook)
 
 
 # 🧮 frosts.DataFrame
@@ -76,9 +79,25 @@ new frosts.DataFrame(data: (string | number | boolean)[][]): DataFrame
 ```ts
 const newDf = df.copy()
 ```
-#### `.add_columns(columnName: string, values: (string|number|boolean)[])` - Returns a new Dataframe with the input column
+#### `.add_column(columnName: string, values: (string|number|boolean)[])` - Returns a new Dataframe with the input column
 ```ts
-const df2 = df.add_columns("Passed",[true,false,true]);
+const df2 = df.add_column("Passed",[true,false,true]);
+```
+### `.add_formula_column(columnName:string, formula:string)` - Returns a new DataFrame with a table formula column
+- Add an Excel table-style formula to your df, will be evaluated on writing the dataframe.
+  - Formulas can also be evaluated on command using the [`frosts.hardcode_formulas()`](#-hardcode_formulasdfdataframe-workbookexcelscriptworkbook) command.
+- Useful for complicated mathematical/logical operations
+```ts
+const df = new DataFrame([
+  ["name", "height_cm", "weight_kg"],
+  ["Alice", 160, 55],
+  ["Bob", 175, 85],
+  ["Charlie", 180, 77],
+  ["Diana", 150, 45]
+]);
+let df = new DataFrame(data);
+//Perform a complicated mathematical column operation using tabular formulas
+let w_bmi = df.add_formula_column("BMI","ROUND([@weight_kg]/([@height_cm] * [@height_cm]),1)")
 ```
 #### `.get_numericColumns(): string[]` - Returns an array of the columns with numeric data
 ```ts
@@ -159,6 +178,10 @@ df.sortBy(["Department", "Salary"], [true, false]);
 ```ts
 const joined = df.merge(otherDf, ["EmployeeID"], "left");
 ```
+### `concat(other:DataFrame, columnSelection: ("inner"|"outer"|"left") = "outer")` - Append two DataFrames by concatenating their rows
+- `columnSelection = "outer"`: Default Behavior, Resulting DataFrame will have all columns from both DataFrames (filling missing values with null)
+- `columnSelection = "inner"`: Resulting DataFrame will only have columns with the same name
+- `columnSelection = "left"`: Resulting DataFrame will have all columns of this DataFrame, filling the other dataframe's missing values with null
 #### `.to_array(headers: boolean = true)` - Converts the entire DataFrame (with headers, by default) into a 2D string|number|boolean array
 #### `.to_json(headers: boolean = true)` - Converts the entire DataFrame (with headers, by defualt) into a JSON formatted string
 ### Supported Column Aggregation Methods
@@ -173,19 +196,19 @@ const joined = df.merge(otherDf, ["EmployeeID"], "left");
 
 ## Other Functions
 These utility functions help seamlessly read/write data to and from Excel Workbooks, or configure the frosts namespace
----
+
 #### 🔹 `df_from_range(range: ExcelScript.Range): DataFrame` - Converts an Excel range (including headers) into a `DataFrame`.
 ```ts
 const worksheet = workbook.getActiveWorksheet();
 const range = worksheet.getRange("A1:D10");
 const df = frosts.df_from_range(range);
 ```
----
+
 #### 🔹 `df_from_sheet(sheet: ExcelScript.Worksheet): DataFrame` - Grabs the entire used range of a worksheet and converts it into a `DataFrame`
 ```ts
 const df = frosts.df_from_sheet(workbook.getWorksheet("Sheet1"));
 ```
----
+
 #### 🔹 `write_df_to_sheet(df: DataFrame, workbook: ExcelScript.Workbook, sheet_name?: string, reset_sheet?: boolean, to_table?: boolean, start_cell?: string)`
 Writes a `DataFrame` to a worksheet in the workbook. Optionally clears the sheet, converts to an Excel table, and chooses the starting cell.
 - `df`: The DataFrame to write.
@@ -200,7 +223,18 @@ const df = frosts.df_from_sheet(workbook.getActiveWorksheet());
 //description in it
 frosts.write_df_to_sheet(df.describe(),workbook,"Summary Statistics")
 ```
----
+
+#### 🔹 `hardcode_formulas(df:DataFrame, workbook:ExcelScript.Workbook)`
+Evaluates all formulas in a `DataFrame`, creating a backend worksheet called `"___DEV_SHEET_NULL"`, evaluating all formulas, then  delete the backend worksheet. **Assigns formula values in place**. Used to get outputs of formulas for further calculation
+```ts
+const df = frosts.df_from_sheet(workbook.getActiveWorksheet());
+//Add a custom table formula for complicated manipulation
+let w_formulas = frosts.add_formula_column("Adjusted Occ","IFERROR([@Occupied/([@Available]-[@Out_of_service]),0)");
+//Get numerical values, so we can evaluate further statistics using its values
+frosts.hardcode_formulas(frosts, workbook);
+//Leverage the numerical values to include "Adjusted Occ" in .describe()
+console.log(frosts.describe());
+```
 #### 🔹 `get_separator()`
 Returns the current string used as the `separator` in internal frosts operations. (Default: `"~~~"`)
 #### 🔹 `set_separator(separator:string)`
