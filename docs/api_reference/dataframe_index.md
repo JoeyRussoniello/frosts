@@ -72,7 +72,7 @@ const invalidData = [
   ["Bob", 35, false]  
 ];
 
-const invalidDf = new frosts.DataFrame(invalidData);
+const invalidDf = new fr.DataFrame(invalidData);
 // Output: Error: Duplicate headers found
 ```
 
@@ -92,7 +92,7 @@ df.values[0]["IsActive"] = false;
 
 ## Methods
 
-The methods of the frosts.DataFrame class are organized into five main categories, each with its own dedicated page for detailed documentation:
+The methods of the `fr.DataFrame` class are organized into five main categories, each with its own dedicated page for detailed documentation:
 
 - [Basic Operations](df_methods/basic_operations.md): Methods for accessing and modifying the DataFrame.
 - [Filtering](df_methods/filtering.md): Methods for selecting and filtering rows based on conditions.

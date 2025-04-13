@@ -11,7 +11,9 @@
     2. [`.drop()`](#dropkeysstringdataframe)
     3. [`.add_formula_column()`](#add_formula_columncolumnnamestring-formulastringdataframe)
     4. [`.get_columns()`](#get_columnskeysstringdataframe)
-    5. [`.rename()`](#renamemapping--oldkey-string-string--dataframe)
+    5. [`.get_column()`](#get_columnkeystringstringnumberboolean)
+    6. [`.rename()`](#renamemapping--oldkey-string-string--dataframe)
+    7. []
 3. [➕ Basic Row-Wise Operations](#-basic-row-wise-operations)
     1. [`.operateColumns()`](#operatecolumnsoperator---------col1-string-col2-string-number)
     2. [`.iterrows()`](#iterrows)
@@ -206,6 +208,14 @@ let w_bmi = df.add_formula_column("BMI","ROUND([@weight_kg]/([@height_cm] * [@he
 
 > It is planned to add a .apply() method in a further update that will allow this level of data modification without writing to Excel for those with a deeper understanding of TypeScript mechanics and predicate functions.
 
+If you want to perfrom aggregation functions, sorting, or otherwise calculate the results of these formulas, you can do so with `hardcode_formulas(workbook: ExcelScript.Workbook)`
+
+```ts
+let w_bmi = df.add_formula_column("BMI","ROUND([@weight_kg]/([@height_cm] * [@height_cm]),1)")
+let w_bmi_values = df.hardcode_values(workbook) //Plug in the workbook from the Office Scripts environment
+let sorted_by_bmi = w_bmi_values.sortBy(["BMI"]);
+```
+
 ### `.get_columns(...keys:string[]):DataFrame`
 
 Returns a new `DataFrame` containing only the specified columns, in the order given.
@@ -237,6 +247,26 @@ console.log(selected.values);
 */
 ```
 
+### `.get_column(key:string):(string|number|boolean)[]`
+
+Returns the array corresponding the values in the `key` column.
+
+Throws an error if the key does not exist
+
+```ts
+const df = new frosts.DataFrame([
+  ["Name", "Age", "City"],
+  ["Alice", 28, "NYC"],
+  ["Bob", 32, "LA"],
+  ["Charlie", 24, "Chicago"]
+]);
+
+const selected = df.get_column("Name");
+
+console.log(selected);
+// Output: ["Alice","Bob","Charlie"]
+```
+
 ### `.rename(mapping: { [oldKey: string]: string }): DataFrame`
 
 Returns a new `DataFrame` with renamed columns based on the provided mapping.
@@ -263,6 +293,42 @@ console.log(renamed.values);
   { Name: "Bob", Age: 32 }
 ]
 */
+```
+
+### `.fill_na(columnName: string, method: "prev" | "next" | "value", value?: string | number | boolean):DataFrame`
+
+Fills missing (null or "") values in a column using one of three strategies:
+
+- `"prev"`: Fill with the previous non-null value (forward fill)
+- `"next"`: Fill with the next non-null value (backward fill)
+- `"value"`: Fill with a specified constant
+
+Returns a new `DataFrame` with the null values filled
+
+```ts
+const df = new frosts.DataFrame([
+  ["Day", "Temperature"],
+  ["Mon", 72],
+  ["Tue", null],
+  ["Wed", 75],
+  ["Thu", null],
+  ["Fri", 78]
+]);
+
+// Fill nulls using previous non-null value
+const forwardFill = df.fill_na("Temperature", "prev");
+console.log(forwardFill.get_column("Temperature"));
+// Output: [72, 72, 75, 75, 78]
+
+// Fill nulls using next non-null value
+const backwardFill = df.fill_na("Temperature", "next");
+console.log(backwardFill.get_column("Temperature"));
+// Output: [72, 75, 75, 78, 78]
+
+// Fill nulls using a constant value
+const filledWithZero = df.fill_na("Temperature", "value", 0);
+console.log(filledWithZero.get_column("Temperature"));
+// Output: [72, 0, 75, 0, 78]
 ```
 
 ## ➕ Basic Row-Wise Operations
@@ -340,3 +406,5 @@ Now that you've learned how to manipulate and manage your data with basic operat
 In the next section, you'll discover how to apply conditions and criteria to select only the data you need, enabling more powerful data analysis and transformation.
 
 [Explore Filtering](filtering.md)
+
+[Return to API Reference](/docs/index.md)

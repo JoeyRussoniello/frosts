@@ -10,13 +10,15 @@ namespace frosts{
   export function set_separator(separator:string){
     SEPARATOR = separator;
   }
+
+  //Helper function for DataFrame Initialization
   function column_violates_separator(key:string){
     if (key.includes(get_separator())){
       throw new Error(`Input key: ${key} contains the interal frost separator ${get_separator()}, this may cause unintended behavior. \n Please modify the column name using df.rename(), or the separator value using the frosts.set_separator()`);
     }
   }
 
-  function detectTypeFromString(s: string): string {
+  function detectTypeFromString(s: string): ("string"|"number"|"boolean") {
     if (!s) {
       s = "";
     }
@@ -31,7 +33,7 @@ namespace frosts{
       return "string"
     }
   }
-  function detectColumn(col: string[]): string {
+  function detectColumn(col: string[]): ("string"|"number"|"boolean") {
     // Detect the type of each value in the column
     let types = col.map(i => detectTypeFromString(i));
 
@@ -45,85 +47,101 @@ namespace frosts{
       return "string";
     }
   }
-  export function df_from_range(range: ExcelScript.Range): DataFrame {
+  function parseValue(input:string|number|boolean,parse_method:("string"|"number"|"boolean")):string|number|boolean{
+    switch (parse_method){
+      case "string": return input.toString();
+      case "boolean": return input.toString() == "true";
+      case "number": return parseFloat(input.toString());
+      default: throw SyntaxError("Error parsing value: parsing method must be either 'string','boolean',or 'number'");
+    }
+  }
+  export function read_range(range: ExcelScript.Range): DataFrame {
     return new DataFrame(range.getValues());
   }
-  export function df_from_sheet(Sheet: ExcelScript.Worksheet): DataFrame {
+  export function read_sheet(Sheet: ExcelScript.Worksheet): DataFrame {
     let rng = Sheet.getUsedRange();
-    return df_from_range(rng);
+    return read_range(rng);
   }
-  export function write_df_to_sheet(df: DataFrame, workbook: ExcelScript.Workbook, sheet_name: string = "DataFrame", reset_sheet: boolean = true, to_table: boolean = true, start_cell: string = "A1") {
-    let Sheet = workbook.getWorksheet(sheet_name);
-    if (!Sheet) {
-      Sheet = workbook.addWorksheet(sheet_name)
-    }
 
-    if (reset_sheet){
-      Sheet.getUsedRange()?.setValue("");
-    }
-    const arr = df.to_array();
-    let [n_rows, n_cols] = df.shape();
-    let import_range = Sheet.getRange(start_cell).getResizedRange(n_rows, n_cols - 1);
-
-    //Import Just Headers first for Formula Calculation
-    Sheet.getRange(start_cell).getResizedRange(0,n_cols- 1).setValues([df.columns]);
-    //Then set a table to the import range
-    if (to_table) {
-      try{
-        let table = Sheet.addTable(import_range, true);
-      }
-      catch {
-        console.log(`A table already exists at ${import_range.getAddress()}, proceeding anyways.`);
-      }
-    }
-    //Import all values (including the headers again);
-    import_range.setValues(arr);
-
-    //Print a helpful message if this export wasn't done as a helper method
-    if (import_range.getWorksheet().getName() != DEV_SHEET_NAME){
-      console.log(`Dataframe Written to ${import_range.getAddressLocal()}`);
+  export function read_json(json:string, item: ("values"|"DataFrame") = 'values'):DataFrame{
+    /* Parse an input JSON-coded string to create a DataFrame*/
+    switch (item){
+      case "values": return new DataFrame(JSON.parse(json))
+      case "DataFrame": return JSON.parse(json)
+      default: throw new SyntaxError("JSON parsing method must be either 'values' or 'DataFrame'");
     }
   }
-  export function write_df_to_table(df:DataFrame, table:ExcelScript.Table){
-    let table_cols = table.getColumns()
 
-    if (table_cols.length > df.columns.length){
-      let overflow_cols = table_cols.slice(df.columns.length);
-      let starting_col = overflow_cols[0].getRange().getEntireColumn();
-
-      let deletion_range = starting_col
-      if (overflow_cols.length > 1){
-        deletion_range = starting_col.getResizedRange(0,overflow_cols.length - 1)
+  //Helper function for CSV parsing Fixes occurences like "1,024"
+  function remove_chars_within_quotes(longtext: string): string {
+    //Removes line breaks and commas within quotes using a stack, runs in O(n) space and memory
+    let stklen = 0;
+    let newstring = ""
+    for (let i = 0; i < longtext.length; i++) {
+      let char = longtext[i];
+      //Stack counter to determine whether we are inside double quotes
+      if (char == '"') {
+        if (stklen == 0) {
+          stklen = 1;
+        }
+        else {
+          stklen = 0;
+        }
+        newstring += ""
       }
-      deletion_range.delete(ExcelScript.DeleteShiftDirection.left);
+      //If we are in quotes, these are problem characters.
+      else if (stklen == 1 && (char == "\n" || char == ",")) {
+        if (char == ",") {
+          newstring += ""
+        }
+        if (char == "\n") {
+          newstring += " "
+        }
+      }
+      else {
+        newstring += char
+      }
+    }
+    return newstring
+  }
+
+  export function read_csv(input_text: string, errors: ("raise" | "coerce") = "raise",start_index: number=0, line_separator:string = "\n"): DataFrame {
+    let cleaned_text = remove_chars_within_quotes(input_text);
+    let line_split_arr: string[] = [];
+    //Determine splitting method, then split
+    if (cleaned_text.includes(line_separator)) {
+      line_split_arr = cleaned_text.split(line_separator);
+    }
+    else {
+      console.log(`No split marker in ${cleaned_text}`);
     }
 
-    table.getRangeBetweenHeaderAndTotal().setValue("");
-    let start_cell = table.getRange().getCell(0,0);
-    let [n_rows, n_cols] = df.shape();
+    let output: string[][] = line_split_arr.map(row => row.split(","))
+
+    //Find sizes and reshape array to ensure that the input is square and importable
     
-    const arr = df.to_array();
-    start_cell.getResizedRange(n_rows, n_cols - 1).setValues(arr);
-    //table.getHeaderRowRange();
-  }
+    const maxLength = output.reduce((max, row) => Math.max(max, row.length), 0);
+    output.forEach(row => {
+      if(row.length != maxLength){
+        if (errors=="raise"){
+          throw new TypeError("Error in CSV parsing. Rows are not all the same size. This may cause unintended behavior\nIf this is intentional, use errors='coerce'");
+        }
+        else{
+          while (row.length < maxLength) {
+            row.push(null);
+          }
+        }
+      }
+    });
 
-  export function hardcode_formulas(df:DataFrame, workbook:ExcelScript.Workbook){
-    /*
-      Calculate and Hardcode all formula results in the input df. 
-      Used to aggregate formula based calculations
-    */
-    write_df_to_sheet(df,workbook,DEV_SHEET_NAME);
-    let ExportSheet = workbook.getWorksheet(DEV_SHEET_NAME);
-    let calculated_df = new DataFrame(ExportSheet.getUsedRange().getValues());
-    df.__assign_properties(...calculated_df.__extract_properties());
-    ExportSheet.delete();
+    return new DataFrame(output.slice(start_index));
   }
-
   export type Row = { [key: string]: string | number | boolean };
+
   export class DataFrame {
     columns: string[]
     __headers: Set<String>
-    dtypes: { [key: string]: string }
+    dtypes: { [key: string]: ("string"|"number"|"boolean") }
     values: Row[];
 
     constructor(data: (string | number | boolean)[][]) {
@@ -131,9 +149,6 @@ namespace frosts{
       let headers = str_data[0];
       str_data = str_data.slice(1);
       this.dtypes = {};
-      headers.forEach((header, col_idx) => {
-        this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]))
-      });
 
       //CHECK FOR DUPLICATE HEADERS
       let set_headers = new Set(headers);
@@ -150,9 +165,16 @@ namespace frosts{
         headers.forEach((header, i) => row_values[header] = row[i]);
         this.values.push(row_values);
       }
-    }
 
-    
+      //Enforce type security. Can check all vals in column, but this may slow down other methods
+      headers.forEach((header, col_idx) => {
+        this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]))
+        if(this.dtypes[header] != "string" && this.values.length > 0 && typeof(this.values[0][header]) == "string"){
+          //console.log("Attempting to correct dtypes");
+          this.values.map(row => row[header] = parseValue(row[header], this.dtypes[header]));
+        }
+      });
+    }
 
     to_array(headers: boolean = true): (string | number | boolean)[][] {
       /* Convert the values of the df into a 2D string|number|boolean array */
@@ -183,11 +205,11 @@ namespace frosts{
         .filter(val => typeof val === "number") as number[];
     }
 
-    __extract_properties():[string[], {[key:string]:string}, Row[]]{
+    __extract_properties():[string[], {[key:string]:("string"|"number"|"boolean")}, Row[]]{
       // Get all of the developer properties of the DataFrame
       return [this.columns, this.dtypes, this.values];
     }
-    __assign_properties(columns:string[], dtypes:{[key:string]:string}, values: Row[]){
+    __assign_properties(columns:string[], dtypes:{[key:string]:("string"|"number"|"boolean")}, values: Row[]){
       /* Manually overwrite all of the properties of the DataFrame */
       this.columns = columns;
       this.dtypes = dtypes;
@@ -270,6 +292,11 @@ namespace frosts{
     }
     shape(): [number, number] {
       return [this.values.length, this.columns.length]
+    }
+
+    get_column(key:string):(string|number|boolean)[]{
+      this.__check_membership(key);
+      return this.values.map(row => row[key]);
     }
 
     get_columns(...keys: string[]): DataFrame {
@@ -711,8 +738,12 @@ namespace frosts{
       return this.values.map((row, idx) => [row, idx]);
     }
 
-    to_json(headers:boolean = true):string{
-      return JSON.stringify(this.to_array(headers));
+    to_json(item: ("values" | "DataFrame") = "values", headers:boolean = true):string{
+      switch (item){
+        case "values": return JSON.stringify(this.to_array(headers));
+        case "DataFrame": return JSON.stringify(this);
+        default: throw new SyntaxError('JSON export item must either be "values" or "DataFrame"');
+      }
     }
 
     rename(columnsMap: { [oldName: string]: string }): DataFrame {
@@ -736,6 +767,129 @@ namespace frosts{
       let formula_col:string[] = Array(this.shape()[0]).fill(formula);
       return this.add_column(columnName, formula_col);
     }
+
+    fill_na(columnName:string, method: ("prev"|"next"|"value"), value?: string|number|boolean){
+      this.__check_membership(columnName);
+
+      //Deep copy before
+      let df = this.copy();
+
+      let replace_value:string|number|boolean; 
+      switch (method){
+        case "prev":
+          let warnings:number[] = [];
+          for (let [row, index] of df.iterrows()){
+            if (row[columnName] != "") {
+              replace_value = row[columnName];
+            }
+            else {
+              if (replace_value == null) {
+                warnings.push(index);
+              }
+              row[columnName] = replace_value;
+            }
+          }
+
+          if (warnings.length > 0){
+            console.log(`WARNING: not all values were replaced (no header value to assign)\nMissed values in rows: ${warnings}`);
+          }
+          break;
+        case "next":
+          let to_replace: number[] = [];
+          for (let [row, index] of df.iterrows()){
+            if (row[columnName] == ""){
+              to_replace.push(index);
+            }
+            else{
+              replace_value = row[columnName];
+              while (to_replace.length > 0){
+                df.values[to_replace.pop()][columnName] = replace_value;
+              }
+            }
+          }
+
+          //If there are non-replaced values at the end of iteration log a warning
+          if (to_replace.length > 0 ){
+            console.log(`WARNING: not all values were replaced (no bottom value to assign)\nMissed values in rows: ${to_replace}`);
+          }
+          break;
+        case "value":
+          if (value == null){
+            throw new SyntaxError('If fillNa() method is "value" a value argument must be provided');
+          }
+          df.values.filter(row => row[columnName] == "").forEach(row => row[columnName] = value);
+          break;
+        default: throw new SyntaxError('fillNa() method must be "prev", "next", or "value"')
+      }
+
+      return df;
+    }
+
+    to_worksheet(worksheet:ExcelScript.Worksheet, method: ("o"|"a") = "o"){
+      //Include headers only when overwriting
+      let export_array:(string|number|boolean)[][] = this.to_array(method == "o");
+      let export_range:ExcelScript.Range;
+      let [n_rows, n_cols] = this.shape();
+
+      //Overwrite logic
+      if (method == "o"){
+        //Get entire export range
+        export_range = worksheet.getRange("A1").getResizedRange(n_rows, n_cols - 1)
+        //Import Just Headers for Property Table Initializations (with names)
+        let header_range = worksheet.getRange("A1").getResizedRange(0,n_cols - 1);
+        header_range.setValues([this.columns]);
+        //Then try to set a table to the export range
+        try {
+          worksheet.addTable(export_range, true);
+        }
+        catch {
+          console.log(`A table already exists at ${export_range.getAddressLocal()}, proceeding anyways.`);
+        }
+      }
+      //Append logic
+      else if (method == "a"){
+        let used_rng = worksheet.getUsedRange();
+        if (used_rng == null){
+          //Recursively use overwrite logic if the appending sheet is empty
+          return this.to_worksheet(worksheet,"o");
+        }
+        //Last row of the existing worksheet
+        let end_row = worksheet.getUsedRange().getLastRow()
+        //First cell of the import area
+        let start_rng = end_row.getOffsetRange(1,0).getColumn(0);
+        export_range = start_rng.getResizedRange(n_rows - 1, n_cols - 1); 
+      }
+      else{
+        throw new SyntaxError("Sheet export method must either be 'o' to overwrite or 'a' to append")
+      }
+
+      
+      //Import all values (including the headers again);
+      export_range.setValues(export_array);
+
+      //Print a helpful message if this export wasn't done as a helper method
+      if (worksheet.getName() != DEV_SHEET_NAME) {
+        let writing_method = 
+        console.log(`Dataframe Written to ${export_range.getAddressLocal()}`);
+      }
+      //*/
+    }
+
+    hardcode_formulas(workbook: ExcelScript.Workbook) {
+    /*
+      Calculate and Hardcode all formula results in the input df. 
+      Used to aggregate formula based calculations
+    */
+      let ExportSheet = workbook.getWorksheet(DEV_SHEET_NAME);
+      this.to_worksheet(ExportSheet, 'o');
+      let calculated_df = new DataFrame(ExportSheet.getUsedRange().getValues());
+      this.__assign_properties(...calculated_df.__extract_properties());
+      ExportSheet.delete();
+    }
+
+    to_csv(headers:boolean = true, separator:string = ","):string{
+      return this.to_array(headers).map(row => row.join(separator)).join("\n");
+    }
   }
 }
 
@@ -743,17 +897,11 @@ function main(workbook: ExcelScript.Workbook) {
   //YOUR CODE GOES HERE
 
   /* EXAMPLE CODE:
-  let sheet = workbook.getActiveWorksheet();
-  let df = frosts.df_from_sheet(sheet);
-  
-  frosts.write_df_to_sheet(df.describe(), workbook, "New Worksheet"); //Save decription to New Worksheet
+    let fr = frosts;
+    let sheet = workbook.getActiveWorksheet();
+    let df = fr.read_sheet(sheet);
+    df.describe().to_worksheet(workbook.addWorksheet("Description"),"o");
   */
-  
-  let sheet_names = ["Sheet2","Sheet3"];
-  let sheets = sheet_names.map(s => workbook.getWorksheet(s));
-  let [df1, df2] = sheets.map(s => frosts.df_from_sheet(s));
-  
-  let both = df1.concat(df2,"outer");
-  console.log(both);
+  let fr = frosts;
 }
 
