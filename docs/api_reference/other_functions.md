@@ -52,12 +52,9 @@ const sheet = workbook.getActiveWorksheet();
 const df = fr.read_range(sheet.getUsedRange());
 ```
 
-## fr.read_json(json:string, item: ("values"|"DataFrame") = 'values'):DataFrame
+## fr.read_json(json:string):DataFrame
 
 Reads a JSON string and parses it into a DataFrame.
-
-- If `item = "values"` (default): expects a raw 2D array (with headers).
-- If `item = "DataFrame"`: expects an object with "columns" and "values".
 
 ✅ Use When:
 
@@ -98,4 +95,6 @@ Frost's flexible and intuitive design makes reading and writing data a breeze �
 - Exporting gives you full control over format, structure, and target.
 - Everything integrates seamlessly with ExcelScript, Power Automate, and the broader JavaScript ecosystem.
 
-Now that you’ve mastered data I/O, you’re ready to build powerful data pipelines, automate reports, and deliver clean insights with confidence.
+Now that you’ve mastered data input, you're ready to start processing data in the [DataFrame object](dataframe_index.md)!
+
+[Return to Api Reference](/docs/index.md)

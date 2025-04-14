@@ -49,4 +49,4 @@ const data = [
 const df = new frosts.DataFrame(data);
 ```
 
-Now that you've started a .osts file, and know the basics of initializing a DataFrame, we can [start processesing data](api.md)
+Now that you've started a .osts file, and know the basics of initializing a DataFrame, we can [read data from a source](api_reference/other_functions.md)
