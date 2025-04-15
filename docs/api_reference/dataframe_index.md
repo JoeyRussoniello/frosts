@@ -101,3 +101,5 @@ The methods of the `fr.DataFrame` class are organized into five main categories,
 - [Imports/Exports](df_methods/outputs.md): Ways to import separated values to DataFrames, and export results for PowerAutomate/further scripting
 
 Please refer to the corresponding pages for detailed information and examples for each category.
+
+[Return to API Reference](../index.md)

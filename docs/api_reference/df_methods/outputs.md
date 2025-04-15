@@ -120,4 +120,4 @@ const data_no_headers = df.to_array(false);
 
 You've now mastered everything `frosts`, and you're ready to start building PowerAutomate pipelines and Javascript workflows!
 
-[Return to API Reference](/docs/index.md)
+[Return to API Reference](../../index.md)

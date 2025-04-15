@@ -173,4 +173,5 @@ const salaryQ75 = df.quantile("Salary", 0.75);
 Now that we’ve covered how to summarize and aggregate data, let’s explore how to combine DataFrames with different merging techniques. Whether you’re looking to join on common columns or add rows, merging is a powerful tool for building a complete dataset.
 
 Learn about merging DataFrames [here](merging.md).
-[Return to API Reference](/docs/index.md)
+
+[Return to API Reference](../../index.md)

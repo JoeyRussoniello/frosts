@@ -1,14 +1,14 @@
-# Reading Data
+# Reading and Cleaning Data
 
 Frosts provides a simple and flexible API for importing data from a variety of sources — Excel sheets, ranges, JSON, or raw CSV text. These functions return a `DataFrame` you can immediately work with.
 
 📚 Table of Contents
 
-- `🔢 read_range()`
-- `📄 read_sheet()`
-- `🧾 read_json()`
-- `📑 read_csv()`
-- `to_numeric()`
+- [`🔢 read_range()`](#frread_rangerange-excelscriptrange-dataframe)
+- [`📄 read_sheet()`](#frread_sheetsheet-excelscriptworksheet-dataframe)
+- [`🧾 read_json()`](#frread_jsonjsonstringdataframe)
+- [`📑 read_csv()`](#read_csvinput_text-string-errors-raise--coerce--raisestart_index-number0-line_separatorstring--n-dataframe)
+- [`🔁 to_numeric()`](#frto_numericvaluesstringnumberbooleannumber)
 
 ## fr.read_range(range: ExcelScript.Range): DataFrame
 
@@ -90,7 +90,7 @@ Or skipping the first row:
     const df = fr.read_csv(csv,"coerce",1);
 ```
 
-## to_numeric(values:(string|number|boolean)[]):number[]
+## fr.to_numeric(values:(string|number|boolean)[]):number[]
 
 Converts an array of strings (or mixed values) to numbers.
 Non-convertible values become `NaN`.
@@ -112,4 +112,4 @@ Frost's flexible and intuitive design makes reading and writing data a breeze �
 
 Now that you’ve mastered data input, you're ready to start processing data in the [DataFrame object](dataframe_index.md)!
 
-[Return to Api Reference](/docs/index.md)
+[Return to Api Reference](../index.md)
