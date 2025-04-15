@@ -13,7 +13,13 @@
 ## 📚 Documentation
 
 - [Getting Started](getting-started.md)
-- [API Reference](api.md)
+- [Reading Data](api_reference/other_functions.md)
+- [DataFrame](api_reference/dataframe_index.md)
+  - [Basic Operations](api_reference/df_methods/basic_operations.md)
+  - [Filtering](api_reference/df_methods/filtering.md)
+  - [Aggregating](api_reference/df_methods/aggregation.md)
+  - [Merging](api_reference/df_methods/merging.md)
+  - [Exporting](api_reference/df_methods//outputs.md)
 
 ---
 
