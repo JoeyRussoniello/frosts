@@ -13,7 +13,7 @@ new frosts.DataFrame(data: (string | number | boolean)[][]): DataFrame
 
 ---
 
-### 🔹 Properties
+### Properties
 
 - `df.columns: string[]` - List of column names.
 - `df.values: Row[]` - Array of Rows Objects (one per observation).
