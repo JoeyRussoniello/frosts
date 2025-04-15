@@ -63,13 +63,9 @@ namespace frosts{
     return read_range(rng);
   }
 
-  export function read_json(json:string, item: ("values"|"DataFrame") = 'values'):DataFrame{
+  export function read_json(json:string):DataFrame{
     /* Parse an input JSON-coded string to create a DataFrame*/
-    switch (item){
-      case "values": return new DataFrame(JSON.parse(json))
-      case "DataFrame": return JSON.parse(json)
-      default: throw new SyntaxError("JSON parsing method must be either 'values' or 'DataFrame'");
-    }
+      return new DataFrame(JSON.parse(json))
   }
 
   //Helper function for CSV parsing Fixes occurences like "1,024"
@@ -136,11 +132,16 @@ namespace frosts{
 
     return new DataFrame(output.slice(start_index));
   }
+
+  export function to_numeric(column:(string|number|boolean)[]):number[]{
+    return column.map(row => parseFloat(row.toString()));
+  }
+
   export type Row = { [key: string]: string | number | boolean };
 
   export class DataFrame {
     columns: string[]
-    __headers: Set<String>
+    __headers: Set<string>
     dtypes: { [key: string]: ("string"|"number"|"boolean") }
     values: Row[];
 
@@ -176,6 +177,25 @@ namespace frosts{
       });
     }
 
+    set_column(columnName:string, values:(string|number|boolean)[]):DataFrame{
+      if(this.values.length != values.length){
+        throw new RangeError(`DataFrame and Input Dimensions Don't Match\nDataFrame has ${this.values.length} rows, while input values have ${values.length}`);
+      }
+      let dtype = detectColumn(values.map(row => row.toString()));
+      let output = this.copy()
+
+      if (!output.columns.includes(columnName)){
+        output.columns.push(columnName);
+        output.__headers.add(columnName);
+      }
+
+      output.dtypes[columnName] = dtype;
+      for (let [row, index] of output.iterrows()){
+        row[columnName] = values[index];
+      }
+      return output;
+    }
+    
     to_array(headers: boolean = true): (string | number | boolean)[][] {
       /* Convert the values of the df into a 2D string|number|boolean array */
       if (headers){
@@ -738,12 +758,8 @@ namespace frosts{
       return this.values.map((row, idx) => [row, idx]);
     }
 
-    to_json(item: ("values" | "DataFrame") = "values", headers:boolean = true):string{
-      switch (item){
-        case "values": return JSON.stringify(this.to_array(headers));
-        case "DataFrame": return JSON.stringify(this);
-        default: throw new SyntaxError('JSON export item must either be "values" or "DataFrame"');
-      }
+    to_json(headers:boolean = true):string{
+      return JSON.stringify(this.to_array(headers));
     }
 
     rename(columnsMap: { [oldName: string]: string }): DataFrame {
@@ -869,7 +885,6 @@ namespace frosts{
 
       //Print a helpful message if this export wasn't done as a helper method
       if (worksheet.getName() != DEV_SHEET_NAME) {
-        let writing_method = 
         console.log(`Dataframe Written to ${export_range.getAddressLocal()}`);
       }
       //*/
@@ -890,6 +905,24 @@ namespace frosts{
     to_csv(headers:boolean = true, separator:string = ","):string{
       return this.to_array(headers).map(row => row.join(separator)).join("\n");
     }
+
+    melt(newColumnName: string, newValueName:string, ...columns:string[]): DataFrame{
+      columns.forEach(col => this.__check_membership(col));
+
+      let cols_set = new Set(columns);
+      let other_cols = Array.from(this.__headers).filter(col => !cols_set.has(col));
+      
+      let output_values:(string|number|boolean)[][] = [[...other_cols,newColumnName,newValueName]];
+      for (let row of this.values){
+        let other_vals = other_cols.map(col => row[col]);
+        columns.forEach(col => {
+          let val = row[col]
+          output_values.push([...other_vals,col,val]);
+        });
+      }
+      
+      return new DataFrame(output_values);
+    }
   }
 }
 
@@ -903,5 +936,11 @@ function main(workbook: ExcelScript.Workbook) {
     df.describe().to_worksheet(workbook.addWorksheet("Description"),"o");
   */
   let fr = frosts;
+  let df = new fr.DataFrame([["Name","Balance"],["Alice","$90"],["Bob","$85"]]);
+  let dollars = fr.to_numeric(
+    df.get_column("Balance")
+      .map(row => row.toString().slice(1)
+    ));
+  console.log(df.set_column("Numeric Balance",dollars));
 }
 

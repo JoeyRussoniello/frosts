@@ -8,6 +8,7 @@ Frosts provides a simple and flexible API for importing data from a variety of s
 - `📄 read_sheet()`
 - `🧾 read_json()`
 - `📑 read_csv()`
+- `to_numeric()`
 
 ## fr.read_range(range: ExcelScript.Range): DataFrame
 
@@ -88,6 +89,20 @@ Or skipping the first row:
     const csv = "Report From 4/1/2024\nName,Score\nAlice,88\nBob,90";
     const df = fr.read_csv(csv,"coerce",1);
 ```
+
+## to_numeric(values:(string|number|boolean)[]):number[]
+
+Converts an array of strings (or mixed values) to numbers.
+Non-convertible values become `NaN`.
+
+```ts
+const raw = ["100", "200.5", "invalid", "", null];
+const converted = fr.to_numeric(raw);
+console.log(converted);
+// Output: [100, 200.5, NaN, NaN, NaN]
+```
+
+---
 
 Frost's flexible and intuitive design makes reading and writing data a breeze — whether you're pulling from Excel sheets, parsing raw CSV, or working with JSON APIs. With just a few lines of code, you can go from messy inputs to clean, structured DataFrames ready for transformation, analysis, and export.
 

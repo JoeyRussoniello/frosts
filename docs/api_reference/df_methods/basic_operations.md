@@ -12,8 +12,10 @@
     3. [`.add_formula_column()`](#add_formula_columncolumnnamestring-formulastringdataframe)
     4. [`.get_columns()`](#get_columnskeysstringdataframe)
     5. [`.get_column()`](#get_columnkeystringstringnumberboolean)
-    6. [`.rename()`](#renamemapping--oldkey-string-string--dataframe)
-    7. []
+    6. [`.set_column()`](#set_columncolumnnamestring-valuesstringnumberbooleandataframe)
+    7. [`.rename()`](#renamemapping--oldkey-string-string--dataframe)
+    8. [`.fillna()`](#fill_nacolumnname-string-method-prev--next--value-value-string--number--booleandataframe)
+    9. [`.melt()`](#meltnewcolumnname-string-newvaluenamestring-columnsstring-dataframe)
 3. [➕ Basic Row-Wise Operations](#-basic-row-wise-operations)
     1. [`.operateColumns()`](#operatecolumnsoperator---------col1-string-col2-string-number)
     2. [`.iterrows()`](#iterrows)
@@ -267,6 +269,40 @@ console.log(selected);
 // Output: ["Alice","Bob","Charlie"]
 ```
 
+### `.set_column(columnName:string, values:string|number|boolean[]):DataFrame`
+
+Creates a new DataFrame replacing the column at `columnanme` with the input `values`
+
+> Notes:
+> Will throw an Error if values doesn't have the same number of rows as the `DataFrame`
+> If columnName exists in the DataFrame, it will overwrite that column, other wise it will add a new column.
+
+```ts
+const fr = frosts;
+const df = new fr.DataFrame([
+  ["Name", "Balance"],
+  ["Alice", "$90"],
+  ["Bob", "$85"]
+]);
+
+// Strip the "$" and convert balances to numbers
+const dollars = fr.to_numeric(
+  df.get_column("Balance").map(row => row.toString().slice(1))
+);
+
+// Replace the "Balance" column with numeric values
+const updated = df.set_column("Balance", dollars);
+console.log(updated.to_array());
+/*
+Output:
+[
+  ["Name", "Balance"],
+  ["Alice", 90],
+  ["Bob", 85]
+]
+*/
+```
+
 ### `.rename(mapping: { [oldKey: string]: string }): DataFrame`
 
 Returns a new `DataFrame` with renamed columns based on the provided mapping.
@@ -329,6 +365,66 @@ console.log(backwardFill.get_column("Temperature"));
 const filledWithZero = df.fill_na("Temperature", "value", 0);
 console.log(filledWithZero.get_column("Temperature"));
 // Output: [72, 0, 75, 0, 78]
+```
+
+### `melt(newColumnName: string, newValueName:string, ...columns:string[]): DataFrame`
+
+Converts multiple columns into a long format by stacking their values into rows. Each selected column becomes a row with:
+
+- `newColumnName`: The name of a new column that will store the original column names
+- `newValueName`: The name of a new column that will store the corresponding values
+- `...columns[]`: One or more columns to unpivot (melt) into long format
+
+Returns a new `DataFrame` with the melted structure
+
+```ts
+const df = new frosts.DataFrame([
+  ["Name", "Math", "English", "Science"],
+  ["Alice", 90, 85, 95],
+  ["Bob", 78, 82, 88]
+]);
+
+// Convert subject scores into rows
+const melted = df.melt_columns("Subject", "Score", "Math", "English", "Science");
+console.log(melted.to_array());
+/*
+Output:
+[
+  ["Name", "Subject", "Score"],
+  ["Alice", "Math", 90],
+  ["Alice", "English", 85],
+  ["Alice", "Science", 95],
+  ["Bob", "Math", 78],
+  ["Bob", "English", 82],
+  ["Bob", "Science", 88]
+]
+*/
+```
+
+If the selected columns have mixed types, all values are converted into strings
+
+```ts
+const df = new frosts.DataFrame([
+  ["Name", "Age", "Score", "Enrolled"],
+  ["Alice", 25, 90, true],
+  ["Bob", 30, 78, false]
+]);
+
+// Melt the Age, Score, and Enrolled columns into rows
+const melted = df.melt_columns("Attribute", "Value", "Age", "Score", "Enrolled");
+console.log(melted.to_array());
+/*
+Output:
+[
+  ["Name", "Attribute", "Value"],
+  ["Alice", "Age", "25"],
+  ["Alice", "Score", "90"],
+  ["Alice", "Enrolled", "true"],
+  ["Bob", "Age", "30"],
+  ["Bob", "Score", "78"],
+  ["Bob", "Enrolled", "false"]
+]
+*/
 ```
 
 ## ➕ Basic Row-Wise Operations
