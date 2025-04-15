@@ -102,4 +102,4 @@ The methods of the `fr.DataFrame` class are organized into five main categories,
 
 Please refer to the corresponding pages for detailed information and examples for each category.
 
-[Return to API Reference](../index.md)
+[Return to API Reference](/frosts)

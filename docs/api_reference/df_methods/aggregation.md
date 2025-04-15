@@ -174,4 +174,4 @@ Now that we’ve covered how to summarize and aggregate data, let’s explore ho
 
 Learn about merging DataFrames [here](merging.md).
 
-[Return to API Reference](../../index.md)
+[Return to API Reference](/frosts)

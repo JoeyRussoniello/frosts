@@ -112,4 +112,4 @@ Frost's flexible and intuitive design makes reading and writing data a breeze â€
 
 Now that youâ€™ve mastered data input, you're ready to start processing data in the [DataFrame object](dataframe_index.md)!
 
-[Return to Api Reference](../index.md)
+[Return to API Reference](/frosts)
