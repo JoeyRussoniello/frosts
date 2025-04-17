@@ -24,7 +24,7 @@
 3. [➕ Basic Row-Wise Operations](#-basic-row-wise-operations)
     1. [`.operateColumns()`](#operatecolumnsoperator---------col1-string-col2-string-number)
     2. [`.iterrows()`](#iterrows)
-    3. [`.apply()`]
+    3. [`.apply()`](#applytfn-row-row--t-t)
 
 ## ⚙️ DataFrame Utilities
 
@@ -343,8 +343,6 @@ let df = new DataFrame(data);
 //Divide weight by height square, then round to 1 decimal point
 let w_bmi = df.add_formula_column("BMI","ROUND([@weight_kg]/([@height_cm] * [@height_cm]),1)")
 ```
-
-> It is planned to add a .apply() method in a further update that will allow this level of data modification without writing to Excel for those with a deeper understanding of TypeScript mechanics and predicate functions.
 
 If you want to perfrom aggregation functions, sorting, or otherwise calculate the results of these formulas, you can do so with `hardcode_formulas(workbook: ExcelScript.Workbook)`
 
@@ -667,6 +665,32 @@ Row 1: { Name: "Bob", Age: 32 }
 */
 ```
 
+### `.apply<T>(fn: (row: Row) => T): T[]`
+
+Applies a custom function to each row of the DataFrame and returns an array of results.
+
+- `fn`: A callback that receives a single Row (i.e., an object mapping column names to values)
+- Returns a new array of the function outputs (one per row)
+
+> Note: Since row values may be of mixed type (string | number | boolean), explicit typecasting is often needed inside the callback.
+
+```ts
+const df = new frosts.DataFrame([
+  ["Name", "Score"],
+  ["Alice", 90],
+  ["Bob", 78]
+]);
+
+// Extract names
+const names = df.apply(row => String(row["Name"]).toUppercase());
+console.log(names); // ["ALICE", "BOB"]
+
+// Double the scores
+const doubled = df.apply(row => Number(row["Score"]) * 2);
+console.log(doubled); // [180, 156]
+```
+
+---
 Now that you've learned how to manipulate and manage your data with basic operations like adding, renaming, and sorting columns, it's time to explore how to filter your DataFrame to focus on specific rows or subsets of data.
 
 In the next section, you'll discover how to apply conditions and criteria to select only the data you need, enabling more powerful data analysis and transformation.
