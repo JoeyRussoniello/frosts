@@ -23,8 +23,8 @@ namespace frosts{
       s = "";
     }
     s = s.toString();
-    if (!(isNaN(parseFloat(s))) || s == "") {
-      return "number"
+    if (/^-?\d+(\.\d+)?$/.test(s) || s == "") {
+      return "number";
     }
     if (['true', 'false'].includes(s.toLocaleLowerCase())) {
       return "boolean"
@@ -60,12 +60,21 @@ namespace frosts{
   }
   export function read_sheet(Sheet: ExcelScript.Worksheet): DataFrame {
     let rng = Sheet.getUsedRange();
+    if (!rng){
+      throw new Error(`Input Sheet "${Sheet.getName()}" is empty, unable to create DataFrame`);
+    }
     return read_range(rng);
   }
 
   export function read_json(json:string):DataFrame{
     /* Parse an input JSON-coded string to create a DataFrame*/
       return new DataFrame(JSON.parse(json))
+  }
+
+  export function read_after(Sheet:ExcelScript.Worksheet, n_rows:number, n_cols:number){
+    let rng = Sheet.getUsedRange();
+    let new_rng = rng.getOffsetRange(n_rows,n_cols).getUsedRange();
+    return read_range(new_rng);
   }
 
   //Helper function for CSV parsing Fixes occurences like "1,024"
@@ -282,25 +291,32 @@ namespace frosts{
       return new DataFrame(dataAsMatrix);
     }
 
-    add_column(columnName:string, values:(string|number|boolean)[]):DataFrame{
-      if (values.length != this.values.length){
-        throw RangeError(`Length Mismatch:\nSize of ${columnName} - ${values.length}\nSize of df ${this.values.length}`);
+    add_column(columnName:string, values:(string|number|boolean)[]|(string|number|boolean)):DataFrame{
+      let new_df = this.copy();
+
+      let inp_values:(string|number|boolean)[];
+      if (Array.isArray(values)){
+        if (values.length != this.values.length) {
+          throw RangeError(`Length Mismatch:\nSize of ${columnName} - ${values.length}\nSize of df ${this.values.length}`);
+        }
+        inp_values = values;
+      }
+      else{
+        inp_values = Array(this.values.length).fill(values);
       }
 
-      let new_df = this.copy();
       let old_size = new_df.__headers.size;
       new_df.__headers.add(columnName)
 
-      if (new_df.__headers.size == old_size){
+      if (new_df.__headers.size == old_size) {
         throw RangeError(`Key "${columnName}" already in df`);
       }
-
       new_df.columns.push(columnName);
-      let dtype = detectColumn(values as string[]);
+      let dtype = detectColumn(inp_values as string[]);
       new_df.dtypes[columnName] = dtype;
 
       new_df.values.forEach((row, index) => {
-        row[columnName] = values[index]
+        row[columnName] = inp_values[index]
       });
 
       return new_df;
@@ -784,7 +800,18 @@ namespace frosts{
       return this.add_column(columnName, formula_col);
     }
 
-    fill_na(columnName:string, method: ("prev"|"next"|"value"), value?: string|number|boolean){
+    fill_na(columnName:(string|"ALL"), method: ("prev"|"next"|"value"), value?: string|number|boolean):DataFrame{
+      if (columnName == "ALL"){
+        let columns = this.columns;
+        let df = this.copy();
+
+        for (let column of columns){
+          df = df.fill_na(column,method,value);
+        }
+
+        return df;
+      }
+
       this.__check_membership(columnName);
 
       //Deep copy before
@@ -833,11 +860,10 @@ namespace frosts{
           if (value == null){
             throw new SyntaxError('If fillNa() method is "value" a value argument must be provided');
           }
-          df.values.filter(row => row[columnName] == "").forEach(row => row[columnName] = value);
+          df.values.filter(row => row[columnName] == null).forEach(row => row[columnName] = value);
           break;
         default: throw new SyntaxError('fillNa() method must be "prev", "next", or "value"')
       }
-
       return df;
     }
 
@@ -849,6 +875,8 @@ namespace frosts{
 
       //Overwrite logic
       if (method == "o"){
+        //Overwrite the sheet
+        worksheet.getUsedRange()?.setValue("");
         //Get entire export range
         export_range = worksheet.getRange("A1").getResizedRange(n_rows, n_cols - 1)
         //Import Just Headers for Property Table Initializations (with names)
@@ -890,16 +918,16 @@ namespace frosts{
       //*/
     }
 
-    hardcode_formulas(workbook: ExcelScript.Workbook) {
+    hardcode_formulas(workbook: ExcelScript.Workbook): DataFrame {
     /*
       Calculate and Hardcode all formula results in the input df. 
       Used to aggregate formula based calculations
     */
-      let ExportSheet = workbook.getWorksheet(DEV_SHEET_NAME);
+      let ExportSheet = workbook.addWorksheet(DEV_SHEET_NAME);
       this.to_worksheet(ExportSheet, 'o');
       let calculated_df = new DataFrame(ExportSheet.getUsedRange().getValues());
-      this.__assign_properties(...calculated_df.__extract_properties());
       ExportSheet.delete();
+      return calculated_df
     }
 
     to_csv(headers:boolean = true, separator:string = ","):string{
@@ -911,8 +939,8 @@ namespace frosts{
 
       let cols_set = new Set(columns);
       let other_cols = Array.from(this.__headers).filter(col => !cols_set.has(col));
-      
       let output_values:(string|number|boolean)[][] = [[...other_cols,newColumnName,newValueName]];
+
       for (let row of this.values){
         let other_vals = other_cols.map(col => row[col]);
         columns.forEach(col => {
@@ -920,27 +948,100 @@ namespace frosts{
           output_values.push([...other_vals,col,val]);
         });
       }
-      
+      //console.log(output_values);
       return new DataFrame(output_values);
+    }
+
+    melt_except(newColumnName: string, newValueName:string, ...exceptColumns:string[]):DataFrame{
+      exceptColumns.forEach(col => this.__check_membership(col));
+
+      let cols_set = new Set(exceptColumns);
+      let melt_cols = Array.from(this.__headers).filter(col => !cols_set.has(col));
+      return this.melt(newColumnName,newValueName,...melt_cols);
+    }
+
+    apply<T>(fn: (row: Row) => T):T[]{
+      return this.values.map(row => fn(row));
+    }   
+
+    drop_rows(...rows:number[]):DataFrame{
+      let df = this.copy();
+
+      let to_avoid = new Set(rows.map(row => {
+        if (row >= 0){return row}
+        else{
+          let adjusted = this.values.length + row;
+          if (adjusted < 0){
+            throw new RangeError(`Not enough rows in DataFrame\nInput ${row}, while df has ${this.values.length} rows`);
+          }
+          return adjusted;
+        }
+      }));
+
+      df.values = df.values.filter((_, index) => !to_avoid.has(index));
+      return df;
+    }
+
+    head(n_rows:number = 10):DataFrame{
+      if (this.values.length <= n_rows){return this}
+      let df = this.copy();
+      df.values = this.values.slice(0,n_rows);
+      return df;
+    }
+
+    tail(n_rows:number = 10):DataFrame{
+      if (this.values.length <= n_rows) { return this }
+      let df = this.copy();
+      df.values = this.values.slice(this.values.length - n_rows);
+      return df;
+    }
+
+    print(n_rows: number = 5) {
+      const totalRows = this.values.length;
+      const headers = this.columns;
+
+      const headRows = this.head(n_rows).values;
+      const tailRows = this.tail(n_rows).values;
+
+      const rowsToPrint = totalRows <= n_rows * 2 ? this.values : [...headRows, "...", ...tailRows];
+
+      // Convert values to array of arrays for consistent handling
+      const dataArray = rowsToPrint.map(row => {
+        if (row === "...") return "...";
+        return headers.map(col => row[col] !== undefined ? String(row[col]) : "");
+      });
+
+      // Calculate column widths based on max length
+      const colWidths = headers.map((header, i) => {
+        const maxDataWidth = dataArray.reduce((max, row) => {
+          if (row === "...") return max;
+          return Math.max(max, row[i]?.length || 0);
+        }, header.length);
+        return maxDataWidth;
+      });
+
+      // Format header and divider
+      const pad = (text: string, width: number) => text.padEnd(width, " ");
+      const headerRow = "| " + headers.map((h, i) => pad(h, colWidths[i])).join(" | ") + " |";
+      const divider = "| " + colWidths.map(w => "-".repeat(w)).join(" | ") + " |";
+
+      // Format data rows
+      const dataRows = dataArray.map(row => {
+        if (row === "...") {
+          return "| " + colWidths.map(w => pad("...", w)).join(" | ") + " |";
+        } else {
+          return "| " + row.map((val, i) => pad(val, colWidths[i])).join(" | ") + " |";
+        }
+      });
+
+      console.log([headerRow, divider, ...dataRows].join("\n"));
     }
   }
 }
+const fr = frosts;
 
 function main(workbook: ExcelScript.Workbook) {
   //YOUR CODE GOES HERE
-
-  /* EXAMPLE CODE:
-    let fr = frosts;
-    let sheet = workbook.getActiveWorksheet();
-    let df = fr.read_sheet(sheet);
-    df.describe().to_worksheet(workbook.addWorksheet("Description"),"o");
-  */
-  let fr = frosts;
-  let df = new fr.DataFrame([["Name","Balance"],["Alice","$90"],["Bob","$85"]]);
-  let dollars = fr.to_numeric(
-    df.get_column("Balance")
-      .map(row => row.toString().slice(1)
-    ));
-  console.log(df.set_column("Numeric Balance",dollars));
+  const sheet = workbook.getActiveWorksheet();
+  let df = fr.read_sheet(sheet);
 }
-

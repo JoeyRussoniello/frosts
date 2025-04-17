@@ -6,6 +6,10 @@
     1. [`.copy()`](#copy)
     2. [`.shape()`](#shape-number-number)
     3. [`.sortBy()`](#sortbycolumns-string-ascending-boolean---dataframe)
+    4. [`.drop_rows()`](#drop_rowsrows-number-dataframe)
+    5. [`.head()`](#headn_rows-number--10-dataframe)
+    6. [`.tail()`](#tailn_rows-number--10-dataframe)
+    7. [`.print()`](#printn_rows-number--5-void)
 2. [🗂️ Column Management](#️-column-management)
     1. [`.add_column()`](#add_columncolumnname-string-values-stringnumberbooleandataframe)
     2. [`.drop()`](#dropkeysstringdataframe)
@@ -16,9 +20,11 @@
     7. [`.rename()`](#renamemapping--oldkey-string-string--dataframe)
     8. [`.fillna()`](#fill_nacolumnname-string-method-prev--next--value-value-string--number--booleandataframe)
     9. [`.melt()`](#meltnewcolumnname-string-newvaluenamestring-columnsstring-dataframe)
+    10. [`.melt_except()`](#melt_exceptnewcolumnnamestring-newvaluenamestring-columnsstring-dataframe)
 3. [➕ Basic Row-Wise Operations](#-basic-row-wise-operations)
     1. [`.operateColumns()`](#operatecolumnsoperator---------col1-string-col2-string-number)
     2. [`.iterrows()`](#iterrows)
+    3. [`.apply()`]
 
 ## ⚙️ DataFrame Utilities
 
@@ -90,6 +96,136 @@ console.log(sorted.values);
   { Department: "HR", Salary: 60000 },
   { Department: "HR", Salary: 50000 }
 ]
+*/
+```
+
+### `drop_rows(...rows: number[]): DataFrame`
+
+Removes specific rows by index from the DataFrame.
+
+- `...rows[]`: One or more row indices to drop
+  - Supports negative indices (e.g., -1 drops the last row)
+- Throws `RangeError` if an index exceeds the number of rows
+
+Returns a new DataFrame without the specified rows.
+
+```ts
+const df = new frosts.DataFrame([
+  ["Name", "Score"],
+  ["Alice", 90],
+  ["Bob", 78],
+  ["Charlie", 85]
+]);
+
+// Drop the second row (index 1)
+const trimmed = df.drop_rows(1);
+console.log(trimmed.to_array());
+/*
+Output:
+[
+  ["Name", "Score"],
+  ["Alice", 90],
+  ["Charlie", 85]
+]
+*/
+
+// Drop the last row using negative index
+const shorter = df.drop_rows(-1);
+console.log(shorter.to_array());
+/*
+Output:
+[
+  ["Name", "Score"],
+  ["Alice", 90],
+  ["Bob", 78]
+]
+*/
+```
+
+### `head(n_rows: number = 10): DataFrame`
+
+Returns the first n_rows of the DataFrame.
+
+- `n_rows`: Number of rows to keep from the top (default is 10)
+- If `n_rows` is greater than the total number of rows, returns the full DataFrame
+
+```ts
+const df = new frosts.DataFrame([
+  ["Name", "Score"],
+  ["Alice", 90],
+  ["Bob", 78],
+  ["Charlie", 85]
+]);
+
+const top2 = df.head(2);
+console.log(top2.to_array());
+/*
+Output:
+[
+  ["Name", "Score"],
+  ["Alice", 90],
+  ["Bob", 78]
+]
+*/
+```
+
+### `tail(n_rows: number = 10): DataFrame`
+
+Returns the last n_rows of the DataFrame.
+
+- `n_rows`: Number of rows to keep from the bottom (default is 10)
+- If `n_rows` is greater than the total number of rows, returns the full DataFrame
+
+```ts
+const df = new frosts.DataFrame([
+  ["Name", "Score"],
+  ["Alice", 90],
+  ["Bob", 78],
+  ["Charlie", 85]
+]);
+
+const last2 = df.tail(2);
+console.log(last2.to_array());
+/*
+Output:
+[
+  ["Name", "Score"],
+  ["Bob", 78],
+  ["Charlie", 85]
+]
+*/
+```
+
+### `print(n_rows: number = 5): void`
+
+Prints a formatted preview of the `DataFrame` to the console.
+
+- `n_rows`: Number of rows to display from the top and bottom (default is 5)
+- If the total number of rows exceeds 2 * n_rows, the middle rows are replaced with "..."
+- Output is aligned in a clean table format
+
+```ts
+const df = new frosts.DataFrame([
+  ["Name", "Score"],
+  ["Alice", 90],
+  ["Bob", 78],
+  ["Charlie", 85],
+  ["Dana", 92],
+  ["Eli", 88],
+  ["Fay", 76],
+  ["Gina", 81]
+]);
+
+// Print first and last 2 rows
+df.print(2);
+/*
+| Name   | Score |
+|--------|-------|
+| Alice  | 90    |
+| Bob    | 78    |
+| ...    | ...   |
+| Fay    | 76    |
+| Gina   | 81    |
 */
 ```
 
@@ -423,6 +559,40 @@ Output:
   ["Bob", "Age", "30"],
   ["Bob", "Score", "78"],
   ["Bob", "Enrolled", "false"]
+]
+*/
+```
+
+### `melt_except(newColumnName:string, newValueName:string, ...columns:string[]): DataFrame`
+
+Converts all columns except the specified ones into long format. The excluded columns are kept as identifiers, while all other columns are stacked into rows.
+
+- `newColumnName`: Name for the column storing original column names
+- `newValueName`: Name for the column storing corresponding values
+- `...except[]`: One or more columns to exclude from melting (used as identifier columns)
+
+Returns a new `DataFrame` in melted (long) format.
+
+```ts
+const df = new frosts.DataFrame([
+  ["Name", "Math", "English", "Science"],
+  ["Alice", 90, 85, 95],
+  ["Bob", 78, 82, 88]
+]);
+
+// Melt all columns except "Name"
+const melted = df.melt_except("Subject", "Score", "Name");
+console.log(melted.to_array());
+/*
+Output:
+[
+  ["Name", "Subject", "Score"],
+  ["Alice", "Math", 90],
+  ["Alice", "English", 85],
+  ["Alice", "Science", 95],
+  ["Bob", "Math", 78],
+  ["Bob", "English", 82],
+  ["Bob", "Science", 88]
 ]
 */
 ```
