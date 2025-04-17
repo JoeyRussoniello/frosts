@@ -6,6 +6,7 @@ Frosts provides a simple and flexible API for importing data from a variety of s
 
 - [`🔢 read_range()`](#frread_rangerange-excelscriptrange-dataframe)
 - [`📄 read_sheet()`](#frread_sheetsheet-excelscriptworksheet-dataframe)
+- [`⏭️ read_after()`](#frread_aftersheet-excelscriptworksheet-n_rows-number-n_cols-number-dataframe)
 - [`🧾 read_json()`](#frread_jsonjsonstringdataframe)
 - [`📑 read_csv()`](#read_csvinput_text-string-errors-raise--coerce--raisestart_index-number0-line_separatorstring--n-dataframe)
 - [`🔁 to_numeric()`](#frto_numericvaluesstringnumberbooleannumber)
@@ -51,6 +52,31 @@ const df = fr.read_sheet(sheet);
 ```ts
 const sheet = workbook.getActiveWorksheet();
 const df = fr.read_range(sheet.getUsedRange());
+```
+
+## fr.read_after(Sheet: ExcelScript.Worksheet, n_rows: number, n_cols: number): DataFrame
+
+Reads the used range after skipping a number of rows and columns, returning the remaining area as a DataFrame.
+
+- Starts from the current sheet's used range.
+- Applies an offset of `n_rows` down and `n_cols` to the right.
+- Reads the used portion from that new position onward.
+
+✅ Use When:
+
+- You want to skip headers, metadata, or intro blocks at the top/left of a worksheet.
+- The data table starts after a known number of rows and columns.
+
+```ts
+const sheet = workbook.getActiveWorksheet();
+const df = fr.read_after(sheet, 3, 1); // skips 3 rows and 1 column
+```
+
+> Note: This is equivalent to:
+
+```ts
+const offset = sheet.getUsedRange().getOffsetRange(3, 1).getUsedRange();
+const df = fr.read_range(offset);
 ```
 
 ## fr.read_json(json:string):DataFrame
