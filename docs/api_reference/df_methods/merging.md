@@ -10,7 +10,8 @@ frosts provides two powerful methods for combining DataFrames: `.merge()` for ke
     1. [Inner Join](#inner-join)
     2. [Left Join](#left-join)
     3. [Outer Join](#outer-join)
-2. [`.concat()`](#concatotherdataframe-columnselection-innerouterleft--outer)
+2. [`.validate_keys()`](#validate_keykey-dataframe-on-string-string--string-errors-raise--return--raise) 
+3. [`.concat()`](#concatotherdataframe-columnselection-innerouterleft--outer)
     1. [Outer Concatenation](#outer-concatenation-default)
     2. [Inner Concatenation](#inner-concatenation)
     3. [Left Concatenation](#left-concatenation)
@@ -122,7 +123,7 @@ Would result in this table
 
 This type of join is especially useful when working with time series data or logs and need to match both an ID and a timestamp, as shown here.
 
-### `.check_key(key: DataFrame, on: [string, string] | string, errors: "raise" | "return" = "raise")`
+### `.validate_key(key: DataFrame, on: [string, string] | string, errors: "raise" | "return" = "raise")`
 
 Checks whether all join key values in the current DataFrame exist in the corresponding column of another DataFrame.
 
