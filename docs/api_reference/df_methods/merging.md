@@ -122,6 +122,75 @@ Would result in this table
 
 This type of join is especially useful when working with time series data or logs and need to match both an ID and a timestamp, as shown here.
 
+### `.check_key(key: DataFrame, on: [string, string] | string, errors: "raise" | "return" = "raise")`
+
+Checks whether all join key values in the current DataFrame exist in the corresponding column of another DataFrame.
+
+#### Parameters
+
+- `key`: A reference DataFrame (typically the lookup table or foreign key source).
+- `on`: Column(s) to match.
+  - If a `string`, the same column name is used in both DataFrames.
+  - If a tuple `[leftCol, rightCol]`, matches `this[leftCol]` to `key[rightCol]`.
+- errors: What to do if mismatches are found.
+  - "raise" (default): Throws an error with all unmatched values.
+  - "return": Returns an array of unmatched values (allows for graceful handling).
+
+#### Returns
+
+- If `errors = "return"`: An array of missing values.
+- If `errors = "raise"`: Throws an error and stops execution if mismatches are found.
+- If all keys are valid: Returns `void`.
+
+✅ Use When:
+
+- You're about to perform a .merge() and want to verify key consistency.
+- You're validating referential integrity between two datasets.
+- You need to detect and handle unexpected join mismatches (e.g., early fail or alert system).
+
+#### Examples
+
+1) Checking keys with the same column names
+
+```ts
+df.check_key(referenceTable, "ProjectID");
+```
+
+Validates that all `ProjectIDs` in `df` exist in `referenceTable`.
+
+2) Checking keys with different column names
+
+```ts
+df.check_key(referenceTable, ["UserID", "StaffID"]);
+```
+
+Checks if every `UserID` in `df` has a match in the `StaffID` column of `referenceTable`.
+
+3) Failing fast on missing keys
+
+```ts
+df.check_key(referenceTable, "ProjectID", "raise");
+```
+
+If any `ProjectID` is not found, would throw
+
+```yaml
+KeyIncompleteError: The following values were not found in the selected key
+[1234, 4567, 8910]
+```
+
+4) Graceful fallback
+
+```ts
+const missing = df.check_key(referenceTable, "ProjectID", "return");
+if (missing?.length) {
+  // Return here instead of crashing main
+  // possibly send to PowerAutomate/logic app
+  return JSON.stringify(missing)  
+  //Output: "[1234,4567,8910]"
+}
+```
+
 ### `.concat(other:DataFrame, columnSelection: ("inner"|"outer"|"left") = "outer")`
 
 The `.concat()` method appends the rows of the `other` DataFrame to the current one. It aligns columns based on the columnSelection mode

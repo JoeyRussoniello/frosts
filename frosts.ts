@@ -1034,7 +1034,38 @@ namespace frosts{
         }
       });
 
-      console.log([headerRow, divider, ...dataRows].join("\n"));
+      let [number_of_df_rows, n_cols] = this.shape();
+      let size_statement = `(${number_of_df_rows} rows x ${n_cols} columns)`
+      console.log([headerRow, divider, ...dataRows,"",size_statement].join("\n"));
+    }
+
+    validate_key(key:DataFrame, on: [string,string]|string, errors: ("raise" | "return") = "raise"):(string|number|boolean)[]|void{
+      let left_on:string;
+      let right_on:string;
+
+      if (typeof(on) == 'string'){
+        [left_on, right_on] = [on, on];
+      }
+      else{
+        [left_on, right_on] = on;
+      }
+
+      this.__check_membership(left_on);
+      key.__check_membership(right_on);
+
+      let left_values = this.get_column(left_on);
+      let right_values = new Set(key.get_column(right_on));
+
+      let not_in_key = left_values.filter(v => !right_values.has(v));
+
+      if (not_in_key.length != 0){
+        if (errors == "raise"){
+          throw new Error(`KeyIncompleteError: The following values were not found in the selected key\n[${not_in_key.join(',')}]`)
+        }
+        else{
+          return not_in_key;
+        }
+      }
     }
   }
 }
@@ -1042,6 +1073,5 @@ const fr = frosts;
 
 function main(workbook: ExcelScript.Workbook) {
   //YOUR CODE GOES HERE
-  const sheet = workbook.getActiveWorksheet();
-  let df = fr.read_sheet(sheet);
+  
 }
