@@ -157,34 +157,48 @@ namespace frosts{
     constructor(data: (string | number | boolean)[][]) {
       let str_data = data as string[][];
       let headers = str_data[0];
-      str_data = str_data.slice(1);
-      this.dtypes = {};
 
-      //CHECK FOR DUPLICATE HEADERS
-      let set_headers = new Set(headers);
-      if (headers.length! - set_headers.size) {
-        throw new SyntaxError("Duplicate Headers found");
+      // Remove columns with blank headers
+      let validHeaders = headers.filter(header => header !== "" && header !== null && header !== undefined);
+
+      // If there are any blank columns, remove the corresponding columns from the data
+      let validColumnsData = str_data.map(row => row.filter((_, i) => headers[i] !== "" && headers[i] !== null && headers[i] !== undefined));
+
+      str_data = validColumnsData.slice(1);  // Remove the first row (headers) from data
+
+      // If no valid headers exist, throw an error
+      if (validHeaders.length === 0) {
+        throw new SyntaxError("No valid headers found.");
       }
 
-      this.columns = headers;
+      this.dtypes = {};
+
+      // Check for duplicate headers
+      let set_headers = new Set(validHeaders);
+      if (validHeaders.length !== set_headers.size) {
+        throw new SyntaxError(`Duplicate Headers found:\n${validHeaders}`);
+      }
+
+      this.columns = validHeaders;
       this.__headers = set_headers;
 
-      this.values = []
+      this.values = [];
       for (let row of str_data) {
         let row_values: Row = {};
-        headers.forEach((header, i) => row_values[header] = row[i]);
+        validHeaders.forEach((header, i) => row_values[header] = row[i]);
         this.values.push(row_values);
       }
 
-      //Enforce type security. Can check all vals in column, but this may slow down other methods
-      headers.forEach((header, col_idx) => {
-        this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]))
-        if(this.dtypes[header] != "string" && this.values.length > 0 && typeof(this.values[0][header]) == "string"){
-          //console.log("Attempting to correct dtypes");
+      // Enforce type security
+      validHeaders.forEach((header, col_idx) => {
+        this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]));
+        if (this.dtypes[header] !== "string" && this.values.length > 0 && typeof (this.values[0][header]) === "string") {
+          // Correct data type if needed
           this.values.map(row => row[header] = parseValue(row[header], this.dtypes[header]));
         }
       });
     }
+
 
     set_column(columnName:string, values:(string|number|boolean)[]):DataFrame{
       if(this.values.length != values.length){
@@ -800,71 +814,75 @@ namespace frosts{
       return this.add_column(columnName, formula_col);
     }
 
-    fill_na(columnName:(string|"ALL"), method: ("prev"|"next"|"value"), value?: string|number|boolean):DataFrame{
-      if (columnName == "ALL"){
-        let columns = this.columns;
-        let df = this.copy();
-
-        for (let column of columns){
-          df = df.fill_na(column,method,value);
+    fill_na(columnName:(string|string[]|"ALL"), method: ("prev"|"next"|"value"), value?: string|number|boolean):DataFrame{
+      if (typeof columnName != "string" || columnName == "ALL"){
+        let columns:string[];
+        if (columnName == "ALL"){
+          columns = this.columns;
+        }
+        else{
+          columns = columnName;
         }
 
+        let df = this.copy()
+        columns.forEach(c => df = df.fill_na(c,method,value));
         return df;
       }
+      else{
+        this.__check_membership(columnName);
 
-      this.__check_membership(columnName);
+        //Deep copy before
+        let df = this.copy();
 
-      //Deep copy before
-      let df = this.copy();
-
-      let replace_value:string|number|boolean; 
-      switch (method){
-        case "prev":
-          let warnings:number[] = [];
-          for (let [row, index] of df.iterrows()){
-            if (row[columnName] != "") {
-              replace_value = row[columnName];
-            }
-            else {
-              if (replace_value == null) {
-                warnings.push(index);
+        let replace_value: string | number | boolean;
+        switch (method) {
+          case "prev":
+            let warnings: number[] = [];
+            for (let [row, index] of df.iterrows()) {
+              if (row[columnName] != "") {
+                replace_value = row[columnName];
               }
-              row[columnName] = replace_value;
-            }
-          }
-
-          if (warnings.length > 0){
-            console.log(`WARNING: not all values were replaced (no header value to assign)\nMissed values in rows: ${warnings}`);
-          }
-          break;
-        case "next":
-          let to_replace: number[] = [];
-          for (let [row, index] of df.iterrows()){
-            if (row[columnName] == ""){
-              to_replace.push(index);
-            }
-            else{
-              replace_value = row[columnName];
-              while (to_replace.length > 0){
-                df.values[to_replace.pop()][columnName] = replace_value;
+              else {
+                if (replace_value == null) {
+                  warnings.push(index);
+                }
+                row[columnName] = replace_value;
               }
             }
-          }
 
-          //If there are non-replaced values at the end of iteration log a warning
-          if (to_replace.length > 0 ){
-            console.log(`WARNING: not all values were replaced (no bottom value to assign)\nMissed values in rows: ${to_replace}`);
-          }
-          break;
-        case "value":
-          if (value == null){
-            throw new SyntaxError('If fillNa() method is "value" a value argument must be provided');
-          }
-          df.values.filter(row => row[columnName] == null).forEach(row => row[columnName] = value);
-          break;
-        default: throw new SyntaxError('fillNa() method must be "prev", "next", or "value"')
+            if (warnings.length > 0) {
+              console.log(`WARNING: not all values were replaced (no header value to assign)\nMissed values in rows: ${warnings}`);
+            }
+            break;
+          case "next":
+            let to_replace: number[] = [];
+            for (let [row, index] of df.iterrows()) {
+              if (row[columnName] == "") {
+                to_replace.push(index);
+              }
+              else {
+                replace_value = row[columnName];
+                while (to_replace.length > 0) {
+                  df.values[to_replace.pop()][columnName] = replace_value;
+                }
+              }
+            }
+
+            //If there are non-replaced values at the end of iteration log a warning
+            if (to_replace.length > 0) {
+              console.log(`WARNING: not all values were replaced (no bottom value to assign)\nMissed values in rows: ${to_replace}`);
+            }
+            break;
+          case "value":
+            if (value == null) {
+              throw new SyntaxError('If fillNa() method is "value" a value argument must be provided');
+            }
+            df.values.filter(row => row[columnName] == null).forEach(row => row[columnName] = value);
+            break;
+          default: throw new SyntaxError('fillNa() method must be "prev", "next", or "value"')
+        }
+        return df;
       }
-      return df;
     }
 
     to_worksheet(worksheet:ExcelScript.Worksheet, method: ("o"|"a") = "o"){
@@ -1073,5 +1091,7 @@ const fr = frosts;
 
 function main(workbook: ExcelScript.Workbook) {
   //YOUR CODE GOES HERE
+  // See full documentation and usage instructions here: https://joeyrussoniello.github.io/frosts/
+
   
 }

@@ -18,7 +18,7 @@
     5. [`.get_column()`](#get_columnkeystringstringnumberboolean)
     6. [`.set_column()`](#set_columncolumnnamestring-valuesstringnumberbooleandataframe)
     7. [`.rename()`](#renamemapping--oldkey-string-string--dataframe)
-    8. [`.fillna()`](#fill_nacolumnname-string-method-prev--next--value-value-string--number--booleandataframe)
+    8. [`.fillna()`](#fill_nacolumnname-stringstringall-method-prev--next--value-value-string--number--booleandataframe)
     9. [`.melt()`](#meltnewcolumnname-string-newvaluenamestring-columnsstring-dataframe)
     10. [`.melt_except()`](#melt_exceptnewcolumnnamestring-newvaluenamestring-columnsstring-dataframe)
 3. [➕ Basic Row-Wise Operations](#-basic-row-wise-operations)
@@ -465,7 +465,13 @@ console.log(renamed.values);
 */
 ```
 
-### `.fill_na(columnName: string, method: "prev" | "next" | "value", value?: string | number | boolean):DataFrame`
+### `.fill_na(columnName: string|string[]|"ALL", method: "prev" | "next" | "value", value?: string | number | boolean):DataFrame`
+
+- `columnName` the column (or columns) to missing values in
+
+  - `"ALL"` will perform this operation on all columns
+  - Entering a `string` value will fill missing value in the input column
+  - Entering an array of `strings` will fill missing values in all input columns
 
 Fills missing (null or "") values in a column using one of three strategies:
 
