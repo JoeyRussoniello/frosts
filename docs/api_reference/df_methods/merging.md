@@ -10,7 +10,7 @@ frosts provides two powerful methods for combining DataFrames: `.merge()` for ke
     1. [Inner Join](#inner-join)
     2. [Left Join](#left-join)
     3. [Outer Join](#outer-join)
-2. [`.validate_keys()`](#validate_keykey-dataframe-on-string-string--string-errors-raise--return--raise) 
+2. [`.validate_keys()`](#validate_keykey-dataframe-on-string-string--string-errors-raise--return--raise)
 3. [`.concat()`](#concatotherdataframe-columnselection-innerouterleft--outer)
     1. [Outer Concatenation](#outer-concatenation-default)
     2. [Inner Concatenation](#inner-concatenation)
@@ -123,6 +123,8 @@ Would result in this table
 
 This type of join is especially useful when working with time series data or logs and need to match both an ID and a timestamp, as shown here.
 
+---
+
 ### `.validate_key(key: DataFrame, on: [string, string] | string, errors: "raise" | "return" = "raise")`
 
 Checks whether all join key values in the current DataFrame exist in the corresponding column of another DataFrame.
@@ -145,7 +147,7 @@ Checks whether all join key values in the current DataFrame exist in the corresp
 
 ✅ Use When:
 
-- You're about to perform a .merge() and want to verify key consistency.
+- You're about to perform a .merge() and want to verify key consistency, especially in automated workflow where dropping/null values aren't acceptable.
 - You're validating referential integrity between two datasets.
 - You need to detect and handle unexpected join mismatches (e.g., early fail or alert system).
 
@@ -191,6 +193,8 @@ if (missing?.length) {
   //Output: "[1234,4567,8910]"
 }
 ```
+
+---
 
 ### `.concat(other:DataFrame, columnSelection: ("inner"|"outer"|"left") = "outer")`
 

@@ -114,6 +114,8 @@ Returns:
 
 This separator is used when performing the hashing operation on multiple columns, and an error will be raised if the separator is in any of the column names.
 
+---
+
 ### `.describe()`
 
 Generates a summary of statistical measures for all numeric columns in the DataFrame. The summary includes the following statistics for each column:
@@ -135,9 +137,9 @@ Generates a summary of statistical measures for all numeric columns in the DataF
 | Salary        | 50    | 70000  | 12000              | 30000   | 50000        | 70000  | 85000        | 120000  |
 | Bonus         | 50    | 5000   | 1500               | 1000    | 3000         | 5000   | 7000         | 10000   |
 
-## Column Aggregation Functions
+---
 
-### Supported Column Aggregation Functions
+## Column Aggregation Functions
 
 These aggregation functions allow you to compute various statistics on individual columns of your DataFrame. They can be called directly on the DataFrame (e.g., df.mean('Salary')).
 

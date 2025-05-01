@@ -30,6 +30,8 @@ df.to_worksheet(workbook.getWorksheet("Results"), "o");
 
 This will overwrite the "Results" sheet with the DataFrame.
 
+---
+
 ## `to_table(table: ExcelScript.Table, method: ("o" | "a") = "o")`
 
 Writes the DataFrame directly into an Excel **Table** object.
@@ -56,6 +58,8 @@ df.to_table(workbook.getTable("SalesTable"), "a");
 
 This will append the DataFrame’s rows to the bottom of "SalesTable", matching on column names.
 
+---
+
 ## to_json(headers:boolean = true):string
 
 Exports the DataFrame as a JSON string.
@@ -78,6 +82,8 @@ Or without headers
 console.log(df.to_json(false));
 //Output: [["Alice",95],["Bob",87]]
 ```
+
+---
 
 ## to_csv(headers:boolean = true, separator:string = ","):string
 
@@ -109,6 +115,8 @@ This method can also be used to convert to TSV or any other separator
 ```ts
 df.to_csv(true,"\t");
 ```
+
+---
 
 ## to_array(headers: boolean = true): (string | number | boolean)[][]
 

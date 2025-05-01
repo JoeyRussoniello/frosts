@@ -51,6 +51,8 @@ console.log(updated.columns);
 // Output: ["Name", "Age", "Active"]
 ```
 
+---
+
 ### `.shape(): [number, number]`
 
 Returns the size of the dataframe's *values* as `[num_rows, num_columns]`
@@ -66,6 +68,8 @@ const df = new frosts.DataFrame([
 console.log(df.shape());
 // Output: [3, 2]  // 3 rows, 2 columns
 ```
+
+---
 
 ### `.sortBy(columns: string[], ascending: boolean[] = []): DataFrame`
 
@@ -98,6 +102,8 @@ console.log(sorted.values);
 ]
 */
 ```
+
+---
 
 ### `drop_rows(...rows: number[]): DataFrame`
 
@@ -142,6 +148,8 @@ Output:
 */
 ```
 
+---
+
 ### `head(n_rows: number = 10): DataFrame`
 
 Returns the first n_rows of the DataFrame.
@@ -169,6 +177,8 @@ Output:
 */
 ```
 
+---
+
 ### `tail(n_rows: number = 10): DataFrame`
 
 Returns the last n_rows of the DataFrame.
@@ -195,6 +205,8 @@ Output:
 ]
 */
 ```
+
+---
 
 ### `print(n_rows: number = 5): void`
 
@@ -228,6 +240,8 @@ df.print(2);
 | Gina   | 81    |
 */
 ```
+
+---
 
 ## 🗂️ Column Management
 
@@ -272,6 +286,8 @@ Size of df: 3
 }
 */
 ```
+
+---
 
 ### `.drop(...keys:string[]):DataFrame`
 
@@ -323,6 +339,8 @@ console.log(dfMinimal.values);
 */
 ```
 
+---
+
 ### `.add_formula_column(columnName:string, formula:string):DataFrame`
 
 Returns a new DataFrame with an Excel table formula column
@@ -351,6 +369,8 @@ let w_bmi = df.add_formula_column("BMI","ROUND([@weight_kg]/([@height_cm] * [@he
 let w_bmi_values = df.hardcode_values(workbook) //Plug in the workbook from the Office Scripts environment
 let sorted_by_bmi = w_bmi_values.sortBy(["BMI"]);
 ```
+
+---
 
 ### `.get_columns(...keys:string[]):DataFrame`
 
@@ -383,6 +403,8 @@ console.log(selected.values);
 */
 ```
 
+---
+
 ### `.get_column(key:string):(string|number|boolean)[]`
 
 Returns the array corresponding the values in the `key` column.
@@ -402,6 +424,8 @@ const selected = df.get_column("Name");
 console.log(selected);
 // Output: ["Alice","Bob","Charlie"]
 ```
+
+---
 
 ### `.set_column(columnName:string, values:string|number|boolean[]):DataFrame`
 
@@ -437,6 +461,8 @@ Output:
 */
 ```
 
+---
+
 ### `.rename(mapping: { [oldKey: string]: string }): DataFrame`
 
 Returns a new `DataFrame` with renamed columns based on the provided mapping.
@@ -464,6 +490,8 @@ console.log(renamed.values);
 ]
 */
 ```
+
+---
 
 ### `.fill_na(columnName: string|string[]|"ALL", method: "prev" | "next" | "value", value?: string | number | boolean):DataFrame`
 
@@ -506,6 +534,8 @@ const filledWithZero = df.fill_na("Temperature", "value", 0);
 console.log(filledWithZero.get_column("Temperature"));
 // Output: [72, 0, 75, 0, 78]
 ```
+
+---
 
 ### `melt(newColumnName: string, newValueName:string, ...columns:string[]): DataFrame`
 
@@ -567,6 +597,8 @@ Output:
 */
 ```
 
+---
+
 ### `melt_except(newColumnName:string, newValueName:string, ...columns:string[]): DataFrame`
 
 Converts all columns except the specified ones into long format. The excluded columns are kept as identifiers, while all other columns are stacked into rows.
@@ -600,6 +632,8 @@ Output:
 ]
 */
 ```
+
+---
 
 ## ➕ Basic Row-Wise Operations
 
@@ -646,6 +680,8 @@ console.log(dfWithTotal.values);
 */
 ```
 
+---
+
 ### `.iterrows()`
 
 Returns an array of tuples, where each tuple contains the row index and the corresponding Row object.
@@ -670,6 +706,8 @@ Row 0: { Name: "Alice", Age: 28 }
 Row 1: { Name: "Bob", Age: 32 }
 */
 ```
+
+---
 
 ### `.apply<T>(fn: (row: Row) => T): T[]`
 

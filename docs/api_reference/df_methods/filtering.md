@@ -60,6 +60,8 @@ console.log(df.filter("Num", is_even));
 */
 ```
 
+---
+
 ### `💬.query(condition: (row: Row) => boolean): DataFrame`
 
 Filters the DataFrame using a custom condition that is applied to each row. The condition can be as complex as needed, involving multiple columns or complex logic.
@@ -90,6 +92,8 @@ console.log(youngTechies.values);
 */
 ```
 
+---
+
 ### `✅.isin(column: string, values: Set<string | number | boolean>): DataFrame`
 
 Filters the DataFrame to include only rows where the value in the specified column is found in the provided set.
@@ -112,6 +116,8 @@ console.log(coastal.values);
 ]
 */
 ```
+
+---
 
 ## Recap - When to Use to Each Filtering Method
 

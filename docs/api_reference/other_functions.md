@@ -30,6 +30,8 @@ const sheet = workbook.getActiveWorksheet();
 const df = fr.read_range(workbook.getRange("A1:C6"));
 ```
 
+---
+
 ## fr.read_sheet(Sheet: ExcelScript.Worksheet): DataFrame
 
 Reads the *entire* used range of a worksheet and returns it as a `DataFrame`.
@@ -53,6 +55,8 @@ const df = fr.read_sheet(sheet);
 const sheet = workbook.getActiveWorksheet();
 const df = fr.read_range(sheet.getUsedRange());
 ```
+
+---
 
 ## fr.read_after(Sheet: ExcelScript.Worksheet, n_rows: number, n_cols: number): DataFrame
 
@@ -79,6 +83,8 @@ const offset = sheet.getUsedRange().getOffsetRange(3, 1).getUsedRange();
 const df = fr.read_range(offset);
 ```
 
+---
+
 ## fr.read_json(json:string):DataFrame
 
 Reads a JSON string and parses it into a DataFrame.
@@ -87,6 +93,8 @@ Reads a JSON string and parses it into a DataFrame.
 
 - You're loading data from an API, file, or serialized string.
 - You’ve previously used `df.to_json()` to export data.
+
+---
 
 ## read_csv(input_text: string, errors: ("raise" | "coerce") = "raise",start_index: number=0, line_separator:string = "\n"): DataFrame
 
@@ -115,6 +123,8 @@ Or skipping the first row:
     const csv = "Report From 4/1/2024\nName,Score\nAlice,88\nBob,90";
     const df = fr.read_csv(csv,"coerce",1);
 ```
+
+---
 
 ## fr.to_numeric(values:(string|number|boolean)[]):number[]
 
