@@ -15,6 +15,7 @@ frosts provides two powerful methods for combining DataFrames: `.merge()` for ke
     1. [Outer Concatenation](#outer-concatenation-default)
     2. [Inner Concatenation](#inner-concatenation)
     3. [Left Concatenation](#left-concatenation)
+4. [`fr.combine_dfs()]
 
 ### `.merge(other: DataFrame, on: string[], how: "inner" | "left" | "outer" = "inner")`
 
@@ -263,7 +264,61 @@ df1.concat(df2, "left");
 
 ---
 
->✅ With your datasets successfully combined, the final step is often saving or sharing your results—let’s look at how to export and import DataFrames using Excel, CSV, and JSON.
+### `fr.combine_dfs(dfs: DataFrame[], columnSelection: ("inner" | "outer" | "left") = "outer"): DataFrame`
+
+Combines an array of DataFrames into a single DataFrame by vertically concatenating them, while aligning columns according to the specified strategy.
+
+- **`dfs`**: An array of one or more `DataFrame` objects to combine.
+- **`columnSelection`** *(default = `"outer"`)*:
+  - `"outer"`: Includes **all columns** found in any DataFrame (union).
+  - `"inner"`: Includes only columns **common to all** DataFrames (intersection).
+  - `"left"`: Uses only the columns from the **first (base) DataFrame**.
+
+🔍 **Behavior**  
+- If no DataFrames are provided, it throws a `RangeError`.
+- If a single DataFrame is provided, it returns that DataFrame unchanged.
+- Otherwise, it takes the first DataFrame as the base, concatenates the remaining DataFrames onto it (using the same column alignment logic as `concat()`), and returns the modified base DataFrame.
+
+✅ **Use When**  
+Use `combine_dfs()` when you have multiple DataFrames with potentially different columns that you need to merge into one, and you want a more streamlined syntax compared to manually calling `concat_all()`.
+
+### Example
+
+#### Input DataFrames
+
+**df1**
+
+| Name  | Age |
+|-------|-----|
+| Alice | 30  |
+| Bob   | 28  |
+
+**df2**
+
+| Name  | Salary |
+|-------|--------|
+| Carol | 60000  |
+| Dave  | 52000  |
+
+#### Code Example
+
+```ts
+const combined = combine_dfs([df1, df2], "outer");
+combined.print();
+```
+
+Output:
+
+| Name  | Age  | Salary |
+|-------|------|--------|
+| Alice | 30   | null   |
+| Bob   | 28   | null   |
+| Carol | null | 60000  |
+| Dave  | null | 52000  |
+
+---
+
+>✅ With your datasets successfully combined, the final step is often saving or sharing your results—let’s look at how to export DataFrames using Excel, CSV, and JSON.
 
 [Continue to Input/Output](outputs.md)
 
