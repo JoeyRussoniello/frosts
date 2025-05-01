@@ -10,6 +10,7 @@
     5. [`.head()`](#headn_rows-number--10-dataframe)
     6. [`.tail()`](#tailn_rows-number--10-dataframe)
     7. [`.print()`](#printn_rows-number--5-void)
+    8. [`.unique()`](#uniquecolumns-string-dataframe)
 2. [🗂️ Column Management](#️-column-management)
     1. [`.add_column()`](#add_columncolumnname-string-values-stringnumberbooleandataframe)
     2. [`.drop()`](#dropkeysstringdataframe)
@@ -240,6 +241,44 @@ df.print(2);
 | Gina   | 81    |
 */
 ```
+
+---
+
+## `unique(...columns: string[]): DataFrame`
+
+Returns a new DataFrame containing all **unique combinations** of values across the specified columns.
+
+- **`columns`**: One or more column names to evaluate uniqueness on.
+
+🔍 **Behavior**  
+Scans the DataFrame and extracts each distinct row formed by the specified columns. The result is a new DataFrame containing only those unique combinations.
+
+✅ **Use When**  
+You want to identify all unique combinations of keys — such as `(Customer, Date)`, `(Region, Product)`, etc. — and work with the result as a standard DataFrame for further analysis or joins.
+
+### Example
+
+Given this dataset:
+
+| Customer | Date       | Revenue |
+|----------|------------|---------|
+| Alice    | 2024-01-01 | 100     |
+| Bob      | 2024-01-01 | 150     |
+| Alice    | 2024-01-02 | 130     |
+| Alice    | 2024-01-01 | 100     |
+
+```ts
+let result = df.unique("Customer", "Date");
+result.print();
+```
+
+Output:
+
+| Customer | Date       |
+|----------|------------|
+| Alice    | 2024-01-01 |
+| Bob      | 2024-01-01 |
+| Alice    | 2024-01-02 |
 
 ---
 

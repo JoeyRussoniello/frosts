@@ -451,10 +451,24 @@ namespace frosts{
       return this.quantile(column, 50);
     }
 
-    unique(column:string): (string|number|boolean)[]{
-      this.__check_membership(column);
+    unique(...columns:string[]): DataFrame{
+      columns.forEach(c => this.__check_membership(c));
 
-      return Array.from(new Set(this.values.map(row => row[column])));
+      let combinations_seen = new Set();
+
+      let output:(string|number|boolean)[][] = [];
+      for (let [row, index] of this.iterrows()){
+        const combo = columns.map(c => row[c]);
+
+        let key = JSON.stringify(combo);
+
+        if (!combinations_seen.has(key)){
+          combinations_seen.add(key);
+          output.push(combo);
+        }
+      }
+
+      return new DataFrame([columns,...output]);
     }
     getNumericColumns(): string[] {
       return this.columns.filter(col => this.dtypes[col] === "number");
