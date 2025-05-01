@@ -66,12 +66,12 @@ namespace frosts{
     return read_range(rng);
   }
 
-  export function read_json(json:string):DataFrame{
+  export function read_json(json: string):DataFrame{
     /* Parse an input JSON-coded string to create a DataFrame*/
       return new DataFrame(JSON.parse(json))
   }
 
-  export function read_after(Sheet:ExcelScript.Worksheet, n_rows:number, n_cols:number){
+  export function read_after(Sheet: ExcelScript.Worksheet, n_rows: number, n_cols: number){
     let rng = Sheet.getUsedRange();
     let new_rng = rng.getOffsetRange(n_rows,n_cols).getUsedRange();
     return read_range(new_rng);
@@ -110,7 +110,7 @@ namespace frosts{
     return newstring
   }
 
-  export function read_csv(input_text: string, errors: ("raise" | "coerce") = "raise",start_index: number=0, line_separator:string = "\n"): DataFrame {
+  export function read_csv(input_text: string, errors: ("raise" | "coerce") = "raise", start_index: number = 0, line_separator: string = "\n"): DataFrame {
     let cleaned_text = remove_chars_within_quotes(input_text);
     let line_split_arr: string[] = [];
     //Determine splitting method, then split
@@ -157,43 +157,33 @@ namespace frosts{
     constructor(data: (string | number | boolean)[][]) {
       let str_data = data as string[][];
       let headers = str_data[0];
-
-      // Remove columns with blank headers
-      let validHeaders = headers.filter(header => header !== "" && header !== null && header !== undefined);
-
-      // If there are any blank columns, remove the corresponding columns from the data
-      let validColumnsData = str_data.map(row => row.filter((_, i) => headers[i] !== "" && headers[i] !== null && headers[i] !== undefined));
-
-      str_data = validColumnsData.slice(1);  // Remove the first row (headers) from data
-
-      // If no valid headers exist, throw an error
-      if (validHeaders.length === 0) {
-        throw new SyntaxError("No valid headers found.");
-      }
-
+      str_data = str_data.slice(1);
       this.dtypes = {};
 
-      // Check for duplicate headers
-      let set_headers = new Set(validHeaders);
-      if (validHeaders.length !== set_headers.size) {
-        throw new SyntaxError(`Duplicate Headers found:\n${validHeaders}`);
-      }
+      //Fix duplicate headers by adding extra labels
+      let times_seen = {};
+      headers.forEach((header, i) => {
+        if (header in times_seen){
+          headers[i] = header + "_"+ times_seen[header]
+          times_seen[header] = times_seen[header] + 1;
+        }
+        times_seen[header] = 1;
+      })
 
-      this.columns = validHeaders;
-      this.__headers = set_headers;
-
-      this.values = [];
+      this.columns = headers;
+      this.__headers = new Set(this.columns);
+      this.values = []
       for (let row of str_data) {
         let row_values: Row = {};
-        validHeaders.forEach((header, i) => row_values[header] = row[i]);
+        headers.forEach((header, i) => row_values[header] = row[i]);
         this.values.push(row_values);
       }
 
-      // Enforce type security
-      validHeaders.forEach((header, col_idx) => {
-        this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]));
-        if (this.dtypes[header] !== "string" && this.values.length > 0 && typeof (this.values[0][header]) === "string") {
-          // Correct data type if needed
+      //Enforce type security. Can check all vals in column, but this may slow down other methods
+      headers.forEach((header, col_idx) => {
+        this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]))
+        if (this.dtypes[header] != "string" && this.values.length > 0 && typeof (this.values[0][header]) == "string") {
+          //console.log("Attempting to correct dtypes");
           this.values.map(row => row[header] = parseValue(row[header], this.dtypes[header]));
         }
       });
@@ -1085,6 +1075,77 @@ namespace frosts{
         }
       }
     }
+
+    __overwrite_to_table(table:ExcelScript.Table){
+      let table_rng = table.getRange();
+      let n_table_rows = Number(table_rng.getLastRow().getEntireRow().getAddress().split(":")[1])-1;
+      let n_table_cols = table.getHeaderRowRange().getValues()[0].length;
+
+      let [n_df_rows,n_df_cols] = this.shape();
+
+      //Delete excess table columns
+      if (n_table_cols > n_df_cols){
+        let diff = n_df_cols - n_table_cols + 1 //Add one for column resizing
+        let last_col = table_rng.getLastColumn();
+
+        let delete_rng = last_col.getResizedRange(0,diff);
+
+        console.log(`Existing Table Has Too Many Columns. Deleting Range: ${delete_rng.getAddressLocal()}`);
+        delete_rng.delete(ExcelScript.DeleteShiftDirection.left);
+        table_rng = table.getRange();
+      }
+      //Delete excess table rows
+      if (n_table_rows > n_df_rows){
+        let diff = n_df_rows - n_table_rows + 1;
+        let last_row = table_rng.getLastRow();
+
+        let delete_rng = last_row.getResizedRange(diff,0);
+
+        console.log(`Existing Table Has Too Many Rows. Deleting Range: ${delete_rng.getAddressLocal()}`);
+        delete_rng.delete(ExcelScript.DeleteShiftDirection.up);
+        table_rng = table.getRange();
+      }
+
+      //Get the starting point of the table
+      let table_start = table_rng.getCell(0,0);
+      let overwrite_vals = this.to_array(true);
+
+      table_start.getResizedRange(n_df_rows,n_df_cols - 1).setValues(overwrite_vals);
+    }
+
+    __append_to_table(table:ExcelScript.Table){
+      let rng = table.getRange();
+      let first_cell = rng.getLastRow().getCell(0,0).getOffsetRange(1,0);
+
+      //Mapping onto new table logic
+      let headers = table.getHeaderRowRange().getValues()[0] as string[];
+      let header_set = new Set(headers);
+
+      let not_found_in_df = headers.filter(h => !(this.__headers.has(h)));
+      let not_found_in_table = this.columns.filter(c => !(header_set.has(c)));
+
+      if (not_found_in_df.length > 0){
+        console.log(`Table Headers not found in DataFrame: ${not_found_in_df}. Filling Values with null...`);
+      }
+      if (not_found_in_table.length > 0){
+        console.log(`Dataframe headers not found in table ${not_found_in_table}. Dropping values to append...`);
+      }
+
+
+      let new_values = this.values.map((row, idx) => {
+        return headers.map(h => row[h]) //Map all of the headers onto the new DataFrame
+      })
+      
+      first_cell.getResizedRange(new_values.length - 1, new_values[0].length - 1).setValues(new_values);
+    }
+
+    to_table(table:ExcelScript.Table, method:('o'|'a')){
+      switch (method){
+        case 'o': return this.__overwrite_to_table(table);
+        case 'a': return this.__append_to_table(table);
+        default: throw new SyntaxError("Table write method must either be 'o' (overwrite), or 'a' (append).")
+      }
+    }
   }
 }
 const fr = frosts;
@@ -1092,6 +1153,6 @@ const fr = frosts;
 function main(workbook: ExcelScript.Workbook) {
   //YOUR CODE GOES HERE
   // See full documentation and usage instructions here: https://joeyrussoniello.github.io/frosts/
-
   
 }
+

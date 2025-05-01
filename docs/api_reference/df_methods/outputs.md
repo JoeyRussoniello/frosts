@@ -5,9 +5,10 @@ Once your data is prepared and processed, you'll often want to save it for later
 ## Table of Contents
 
 1. [`to_worksheet()`](#to_worksheetworksheetexcelscriptworksheet-method-oa--o)
-2. [`to_json()`](#to_jsonheadersboolean--truestring)
-3. [`to_csv()`](#to_csvheadersboolean--true-separatorstring--string)
-4. [`to_array()`](#to_arrayheaders-boolean--true-string--number--boolean)
+2. [`to_table()`](#to_tabletable-excelscripttable-method-o--a--o)
+3. [`to_json()`](#to_jsonheadersboolean--truestring)
+4. [`to_csv()`](#to_csvheadersboolean--true-separatorstring--string)
+5. [`to_array()`](#to_arrayheaders-boolean--true-string--number--boolean)
 
 ## to_worksheet(worksheet:ExcelScript.Worksheet, method: ("o"|"a") = "o")
 
@@ -28,6 +29,32 @@ df.to_worksheet(workbook.getWorksheet("Results"), "o");
 ```
 
 This will overwrite the "Results" sheet with the DataFrame.
+
+## `to_table(table: ExcelScript.Table, method: ("o" | "a") = "o")`
+
+Writes the DataFrame directly into an Excel **Table** object.
+
+- **`table`**: The target `ExcelScript.Table` object.
+- **`method`**: `"o"` (overwrite) or `"a"` (append).
+  - `"o"` clears excess rows and columns, then overwrites the table from the top left.
+  - `"a"` appends rows to the end of the table, aligning data by column name.
+
+✅ **Use When**  
+
+You're working with **structured tables** in Excel and want to preserve table formatting, filters, and styles. Ideal for automated report generation and PowerBI-connected tables.
+
+🧠 **Column Matching Logic for Appends**
+
+- Extra DataFrame columns (not found in the table) are **dropped**.
+- Table columns not present in the DataFrame are **filled with `null`**.
+
+> Note: This logic is not currently applied to overwrites by design, and all DataFrame values are always overwritten in the new table, possibly causing increases/decreases in table size.
+
+```ts
+df.to_table(workbook.getTable("SalesTable"), "a");
+```
+
+This will append the DataFrame’s rows to the bottom of "SalesTable", matching on column names.
 
 ## to_json(headers:boolean = true):string
 
@@ -52,8 +79,6 @@ console.log(df.to_json(false));
 //Output: [["Alice",95],["Bob",87]]
 ```
 
-### PROVIDE AN OUTPUT HERE
-
 ## to_csv(headers:boolean = true, separator:string = ","):string
 
 Converts the DataFrame to a CSV-formatted string.
@@ -72,7 +97,7 @@ Example:
 const csv = df.to_csv(true, ",");
 ```
 
-Example Output **change to table**
+Example Output:
 
 | Name  | Score |
 |-------|-------|
