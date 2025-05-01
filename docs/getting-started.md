@@ -39,6 +39,6 @@ let df_from_json = fr.read_json(json_string);
 let df_from_csv = fr.read_csv(csv_string);
 ```
 
-Now that you've configured your Office Script, and know the basics of initializing a DataFrame, we can start by [reading data from a source](api_reference/other_functions.md)
+Now that you've configured your Office Script and know the basics of initializing a DataFrame, we can start by [reading data from a source](api_reference/other_functions.md)
 
 [Return to API Reference](/frosts)
