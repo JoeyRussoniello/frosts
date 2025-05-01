@@ -1,4 +1,4 @@
-# Reading and Cleaning Data
+# 📘Reading and Cleaning Data
 
 Frosts provides a simple and flexible API for importing data from a variety of sources — Excel sheets, ranges, JSON, or raw CSV text. These functions return a `DataFrame` you can immediately work with.
 

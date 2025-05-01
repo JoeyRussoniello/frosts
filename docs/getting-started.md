@@ -9,15 +9,20 @@ Implementing frosts in your office scripts is incredibly easy! Either:
 
 ## 🚀 Getting Started
 
-The agreed alias for frosts fr to follow pandas convention, so loading frosts as `fr` is assumed standard practice for all of the frosts documentation.
+Create a `DataFrame` by passing in a 2D array where the **first row is the header**:
 
 ```ts
-let frosts = fr;
+const data = [
+  ["Name", "Age", "Score"],
+  ["Alice", 25, 88],
+  ["Bob", 30, 92],
+  ["Charlie", 28, 79],
+];
+
+const df = new fr.DataFrame(data);
 ```
 
-This line of code is built-in for `frosts.osts` and `frosts.ts` already.
-
-Create a `DataFrame` by using one of the frost helper functions
+Or by using one of the frost helper functions (more details on this later)
 
 ```ts
 const selectedSheeet = workbook.getActiveWorksheet();
@@ -34,19 +39,6 @@ let df_from_json = fr.read_json(json_string);
 let df_from_csv = fr.read_csv(csv_string);
 ```
 
-> See More Information on creating DataFrames with helper methods in the [Reading Data](api_reference/other_methods.md)
+Now that you've configured your Office Script, and know the basics of initializing a DataFrame, we can start by [reading data from a source](api_reference/other_functions.md)
 
-Or by passing in a 2D array where the **first row is the header**:
-
-```ts
-const data = [
-  ["Name", "Age", "Score"],
-  ["Alice", 25, 88],
-  ["Bob", 30, 92],
-  ["Charlie", 28, 79],
-];
-
-const df = new frosts.DataFrame(data);
-```
-
-Now that you've started a .osts file, and know the basics of initializing a DataFrame, we can [read data from a source](api_reference/other_functions.md)
+[Return to API Reference](/frosts)

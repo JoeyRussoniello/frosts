@@ -1,4 +1,4 @@
-namespace frosts{
+namespace fr{
   //DEFAULT SEPARATOR FOR MULTIPLE JOINS
   let SEPARATOR = "~~~";
   //ABSTRACT DEV SHEET NAME FOR FORMULA HARDCODING
@@ -14,7 +14,7 @@ namespace frosts{
   //Helper function for DataFrame Initialization
   function column_violates_separator(key:string){
     if (key.includes(get_separator())){
-      throw new Error(`Input key: ${key} contains the interal frost separator ${get_separator()}, this may cause unintended behavior. \n Please modify the column name using df.rename(), or the separator value using the frosts.set_separator()`);
+      throw new Error(`Input key: ${key} contains the interal frost separator ${get_separator()}, this may cause unintended behavior. \n Please modify the column name using df.rename(), or the separator value using the fr.set_separator()`);
     }
   }
 
@@ -47,7 +47,7 @@ namespace frosts{
       return "string";
     }
   }
-  function parseValue(input:string|number|boolean,parse_method:("string"|"number"|"boolean")):string|number|boolean{
+  function parseValue(input:ColumnType,parse_method:("string"|"number"|"boolean")):ColumnType{
     switch (parse_method){
       case "string": return input.toString();
       case "boolean": return input.toString() == "true";
@@ -142,11 +142,12 @@ namespace frosts{
     return new DataFrame(output.slice(start_index));
   }
 
-  export function to_numeric(column:(string|number|boolean)[]):number[]{
+  export function to_numeric(column:ColumnType[]):number[]{
     return column.map(row => parseFloat(row.toString()));
   }
 
-  export type Row = { [key: string]: string | number | boolean };
+  export type ColumnType = string | number | boolean;
+  export type Row = { [key: string]: ColumnType };
 
   export class DataFrame {
     columns: string[]
@@ -154,7 +155,7 @@ namespace frosts{
     dtypes: { [key: string]: ("string"|"number"|"boolean") }
     values: Row[];
 
-    constructor(data: (string | number | boolean)[][]) {
+    constructor(data: ColumnType[][]) {
       let str_data = data as string[][];
       let headers = str_data[0];
       str_data = str_data.slice(1);
@@ -190,7 +191,7 @@ namespace frosts{
     }
 
 
-    set_column(columnName:string, values:(string|number|boolean)[]):DataFrame{
+    set_column(columnName:string, values:ColumnType[]):DataFrame{
       if(this.values.length != values.length){
         throw new RangeError(`DataFrame and Input Dimensions Don't Match\nDataFrame has ${this.values.length} rows, while input values have ${values.length}`);
       }
@@ -209,7 +210,7 @@ namespace frosts{
       return output;
     }
     
-    to_array(headers: boolean = true): (string | number | boolean)[][] {
+    to_array(headers: boolean = true): ColumnType[][] {
       /* Convert the values of the df into a 2D string|number|boolean array */
       if (headers){
         return [this.columns, ...this.values.map(row => Object.values(row))];
@@ -287,7 +288,7 @@ namespace frosts{
       ];
 
       // Convert back to array-of-arrays for constructor: [columns, ...rows]
-      const dataAsMatrix: (string | number | boolean | null)[][] = [
+      const dataAsMatrix: (ColumnType | null)[][] = [
         columns,
         ...newData.map(row => columns.map(col => row[col])),
       ];
@@ -295,10 +296,10 @@ namespace frosts{
       return new DataFrame(dataAsMatrix);
     }
 
-    add_column(columnName:string, values:(string|number|boolean)[]|(string|number|boolean)):DataFrame{
+    add_column(columnName:string, values:ColumnType[]|ColumnType):DataFrame{
       let new_df = this.copy();
 
-      let inp_values:(string|number|boolean)[];
+      let inp_values:ColumnType[];
       if (Array.isArray(values)){
         if (values.length != this.values.length) {
           throw RangeError(`Length Mismatch:\nSize of ${columnName} - ${values.length}\nSize of df ${this.values.length}`);
@@ -334,7 +335,7 @@ namespace frosts{
       return [this.values.length, this.columns.length]
     }
 
-    get_column(key:string):(string|number|boolean)[]{
+    get_column(key:string):ColumnType[]{
       this.__check_membership(key);
       return this.values.map(row => row[key]);
     }
@@ -370,7 +371,7 @@ namespace frosts{
       return new DataFrame(resultData);
     }
 
-    filter(key: string, predicate: (value: string | number | boolean) => boolean): DataFrame {
+    filter(key: string, predicate: (value: ColumnType) => boolean): DataFrame {
       // Check if the key exists in the dataframe
       this.__check_membership(key);
 
@@ -456,7 +457,7 @@ namespace frosts{
 
       let combinations_seen = new Set();
 
-      let output:(string|number|boolean)[][] = [];
+      let output:ColumnType[][] = [];
       for (let [row, index] of this.iterrows()){
         const combo = columns.map(c => row[c]);
 
@@ -588,7 +589,7 @@ namespace frosts{
         grouped[groupKey].push(row);
       }
 
-      const aggregatedRows: (string | number | boolean)[][] = [];
+      const aggregatedRows: ColumnType[][] = [];
       const resultHeaders: string[] = [...keys];
 
       // Build output headers
@@ -604,7 +605,7 @@ namespace frosts{
         ]);
 
         const keyParts = groupKey.split(SEPARATOR);
-        const aggregatedRow: (string | number | boolean)[] = [...keyParts];
+        const aggregatedRow: ColumnType[] = [...keyParts];
 
         valueColumns.forEach((col, idx) => {
           const func = aggFuncs[idx];
@@ -675,7 +676,7 @@ namespace frosts{
       return new DataFrame(resultData);
     }
 
-    isin(column: string, values: Set<string | number | boolean>): DataFrame {
+    isin(column: string, values: Set<ColumnType>): DataFrame {
       this.__check_membership(column); // make sure column exists
 
       // Filter rows where the column's value is in the Set
@@ -818,7 +819,7 @@ namespace frosts{
       return this.add_column(columnName, formula_col);
     }
 
-    fill_na(columnName:(string|string[]|"ALL"), method: ("prev"|"next"|"value"), value?: string|number|boolean):DataFrame{
+    fill_na(columnName:(string|string[]|"ALL"), method: ("prev"|"next"|"value"), value?: ColumnType):DataFrame{
       if (typeof columnName != "string" || columnName == "ALL"){
         let columns:string[];
         if (columnName == "ALL"){
@@ -838,7 +839,7 @@ namespace frosts{
         //Deep copy before
         let df = this.copy();
 
-        let replace_value: string | number | boolean;
+        let replace_value: ColumnType;
         switch (method) {
           case "prev":
             let warnings: number[] = [];
@@ -891,7 +892,7 @@ namespace frosts{
 
     to_worksheet(worksheet:ExcelScript.Worksheet, method: ("o"|"a") = "o"){
       //Include headers only when overwriting
-      let export_array:(string|number|boolean)[][] = this.to_array(method == "o");
+      let export_array:ColumnType[][] = this.to_array(method == "o");
       let export_range:ExcelScript.Range;
       let [n_rows, n_cols] = this.shape();
 
@@ -961,7 +962,7 @@ namespace frosts{
 
       let cols_set = new Set(columns);
       let other_cols = Array.from(this.__headers).filter(col => !cols_set.has(col));
-      let output_values:(string|number|boolean)[][] = [[...other_cols,newColumnName,newValueName]];
+      let output_values:ColumnType[][] = [[...other_cols,newColumnName,newValueName]];
 
       for (let row of this.values){
         let other_vals = other_cols.map(col => row[col]);
@@ -1061,7 +1062,7 @@ namespace frosts{
       console.log([headerRow, divider, ...dataRows,"",size_statement].join("\n"));
     }
 
-    validate_key(key:DataFrame, on: [string,string]|string, errors: ("raise" | "return") = "raise"):(string|number|boolean)[]|void{
+    validate_key(key:DataFrame, on: [string,string]|string, errors: ("raise" | "return") = "raise"):ColumnType[]|void{
       let left_on:string;
       let right_on:string;
 
@@ -1162,7 +1163,6 @@ namespace frosts{
     }
   }
 }
-const fr = frosts;
 
 function main(workbook: ExcelScript.Workbook) {
   //YOUR CODE GOES HERE
