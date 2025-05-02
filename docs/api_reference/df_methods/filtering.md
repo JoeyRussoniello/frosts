@@ -4,18 +4,19 @@ Frosts DataFrames offer various filtering methods, each designed for specific us
 
 ## Table of Contents
 
-1. [`🔍.filter()`](#filterkey-string-predicate-value--boolean-dataframe)
+1. [`🔍.filter()`](#filterkey-string-predicate-value--boolean-inplaceboolean--false-dataframe)
 2. [`💬.query()`](#querycondition-row-row--boolean-dataframe)
 3. [`✅.isin()`](#isincolumn-string-values-setstring--number--boolean-dataframe)
 
 ## Filter Functions
 
-### `🔍.filter(key: string, predicate: (value) => boolean): DataFrame`
+### `🔍.filter(key: string, predicate: (value) => boolean, inplace:boolean = false): DataFrame`
 
 Filters the DataFrame to only include rows where the given column value passes the provided predicate function.
 
 - `key` the column name to filter by
 - `predicate` a function or predicate that returns a boolean that determines whether a row should be include
+- `inplace (optional)`: If true, modifies the current DataFrame directly. Otherwise, only returns a new one. Default is `false`.
 
 #### When to Use `.filter()`
 

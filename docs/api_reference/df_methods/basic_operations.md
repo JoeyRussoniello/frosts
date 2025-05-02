@@ -5,19 +5,19 @@
 1. ⚙️ [`DataFrame` Utilities](#️-dataframe-utilities)
     1. [`.copy()`](#copy)
     2. [`.shape()`](#shape-number-number)
-    3. [`.sortBy()`](#sortbycolumns-string-ascending-boolean---dataframe)
+    3. [`.sortBy()`](#sortbycolumns-string-ascending-boolean---inplaceboolean--false-dataframe)
     4. [`.drop_rows()`](#drop_rowsrows-number-dataframe)
     5. [`.head()`](#headn_rows-number--10-dataframe)
     6. [`.tail()`](#tailn_rows-number--10-dataframe)
     7. [`.print()`](#printn_rows-number--5-void)
     8. [`.unique()`](#uniquecolumns-string-dataframe)
 2. [🗂️ Column Management](#️-column-management)
-    1. [`.add_column()`](#add_columncolumnname-string-values-stringnumberbooleandataframe)
+    1. [`.add_column()`](#add_columncolumnname-string-values-stringnumberboolean-inplaceboolean--falsedataframe)
     2. [`.drop()`](#dropkeysstringdataframe)
-    3. [`.add_formula_column()`](#add_formula_columncolumnnamestring-formulastringdataframe)
+    3. [`.add_formula_column()`](#add_formula_columncolumnnamestring-formulastring-inplaceboolean--falsedataframe)
     4. [`.get_columns()`](#get_columnskeysstringdataframe)
     5. [`.get_column()`](#get_columnkeystringstringnumberboolean)
-    6. [`.set_column()`](#set_columncolumnnamestring-valuesstringnumberbooleandataframe)
+    6. [`.set_column()`](#set_columncolumnnamestring-valuesstringnumberboolean-inplaceboolean--falsedataframe)
     7. [`.rename()`](#renamemapping--oldkey-string-string--dataframe)
     8. [`.fillna()`](#fill_nacolumnname-stringstringall-method-prev--next--value-value-string--number--booleandataframe)
     9. [`.melt()`](#meltnewcolumnname-string-newvaluenamestring-columnsstring-dataframe)
@@ -74,7 +74,7 @@ console.log(df.shape());
 
 ---
 
-### `.sortBy(columns: string[], ascending: boolean[] = []): DataFrame`
+### `.sortBy(columns: string[], ascending: boolean[] = [], inplace:boolean = False): DataFrame`
 
 Returns a new DataFrame sorted by one or more columns.
 
@@ -83,6 +83,7 @@ Returns a new DataFrame sorted by one or more columns.
   - `true` for ascending order.
   - `false` for descending order.
 - If the `ascending` array is not provided. Sorts will default to descending order.
+- `inplace (optional)`: If true, modifies the current DataFrame directly. Otherwise, only returns a new one. Default is `false`.
 
 ```ts
 const df = new frosts.DataFrame([
@@ -286,9 +287,13 @@ Output:
 
 ## 🗂️ Column Management
 
-### `.add_column(columnName: string, values: (string|number|boolean)[]):DataFrame`
+### `.add_column(columnName: string, values: (string|number|boolean)[], inplace:boolean = false):DataFrame`
 
-Returns a new DataFrame with the specified column and values appended. The new column must have the same number of values as there are rows in the DataFrame. For example:
+Returns a new DataFrame with the specified column and values appended. The new column must have the same number of values as there are rows in the DataFrame.
+
+`inplace (optional)`: If true, modifies the current DataFrame directly. Otherwise, only returns a new one. Default is `false`.
+
+For example:
 
 ```ts
 const data = [
@@ -382,13 +387,15 @@ console.log(dfMinimal.values);
 
 ---
 
-### `.add_formula_column(columnName:string, formula:string):DataFrame`
+### `.add_formula_column(columnName:string, formula:string, inplace:boolean = false):DataFrame`
 
 Returns a new DataFrame with an Excel table formula column
 
 - Add an Excel table-style formula to your df, will be evaluated on writing the dataframe.
   - Formulas can also be evaluated on command using the `frosts.hardcode_formulas()` command. See more in the [Excel Integration Functions](../other_functions.md) section.
 - Useful for complicated mathematical/logical operations that are hard to replicate with `operate_columns()`
+
+`inplace (optional)`: If true, modifies the current DataFrame directly. Otherwise, only returns a new one. Default is `false`.
 
 ```ts
 const df = new frosts.DataFrame([
@@ -403,7 +410,7 @@ let df = new DataFrame(data);
 let w_bmi = df.add_formula_column("BMI","ROUND([@weight_kg]/([@height_cm] * [@height_cm]),1)")
 ```
 
-If you want to perfrom aggregation functions, sorting, or otherwise calculate the results of these formulas, you can do so with `hardcode_formulas(workbook: ExcelScript.Workbook)`
+If you want to perfrom aggregation functions, sorting, or otherwise calculate the results of these formulas, you can do so with `hardcode_formulas(workbook: ExcelScript.Workbook, inplace:boolean = false)`
 
 ```ts
 let w_bmi = df.add_formula_column("BMI","ROUND([@weight_kg]/([@height_cm] * [@height_cm]),1)")
@@ -468,9 +475,11 @@ console.log(selected);
 
 ---
 
-### `.set_column(columnName:string, values:string|number|boolean[]):DataFrame`
+### `.set_column(columnName:string, values:string|number|boolean[], inplace:boolean = false):DataFrame`
 
-Creates a new DataFrame replacing the column at `columnanme` with the input `values`
+Creates a new DataFrame replacing the column at `columnanme` with the input `values`. 
+
+`inplace (optional)`: If true, modifies the current DataFrame directly. Otherwise, only returns a new one. Default is `false`.
 
 > Notes:
 > Will throw an Error if values doesn't have the same number of rows as the `DataFrame`
