@@ -155,8 +155,7 @@ namespace fr {
         }
 
         let base_df = dfs[0];
-        base_df.concat_all(columnSelection,...dfs.slice(1));
-        return base_df
+        return base_df.concat_all(columnSelection, ...dfs.slice(1));
     }
 
     export function sum(nums: number[]):number{
@@ -179,6 +178,10 @@ namespace fr {
     }
     export function product(nums:number[]):number{
         return nums.reduce((acc, x) => acc * x, 1);
+    }
+
+    export function row_to_array(row:Row):CellValue[]{
+        return Object.values(row);
     }
 
     export type CellValue = string|number|boolean; //Improve type clarity
@@ -225,8 +228,13 @@ namespace fr {
             });
         }
 
+        private __assign_inplace(other:DataFrame, inplace:boolean){
+            if (inplace){
+                this.__assign_properties(...other.__extract_properties());
+            }
+        }
 
-        set_column(columnName: string, values: CellValue[]): DataFrame {
+        set_column(columnName: string, values: CellValue[], inplace:boolean = false): DataFrame {
             if (this.values.length != values.length) {
                 throw new RangeError(`DataFrame and Input Dimensions Don't Match\nDataFrame has ${this.values.length} rows, while input values have ${values.length}`);
             }
@@ -242,6 +250,8 @@ namespace fr {
             for (let [row, index] of output.iterrows()) {
                 row[columnName] = values[index];
             }
+
+            this.__assign_inplace(output,inplace);
             return output;
         }
 
@@ -255,13 +265,13 @@ namespace fr {
             }
         }
 
-        __check_membership(key: string) {
+        private __check_membership(key: string) {
             if (!(this.__headers.has(key))) {
                 throw RangeError(`Key: "${key}" not found in df.\nDf Headers: ${this.columns}`);
             }
         }
 
-        __check_numeric(column: string): number[] {
+        private __check_numeric(column: string): number[] {
             this.__check_membership(column);
 
             const dtype = this.dtypes[column];
@@ -274,11 +284,11 @@ namespace fr {
                 .filter(val => typeof val === "number") as number[];
         }
 
-        __extract_properties(): [string[], { [key: string]: ("string" | "number" | "boolean") }, Row[]] {
+        private __extract_properties(): [string[], { [key: string]: ("string" | "number" | "boolean") }, Row[]] {
             // Get all of the developer properties of the DataFrame
             return [this.columns, this.dtypes, this.values];
         }
-        __assign_properties(columns: string[], dtypes: { [key: string]: ("string" | "number" | "boolean") }, values: Row[]) {
+        private __assign_properties(columns: string[], dtypes: { [key: string]: ("string" | "number" | "boolean") }, values: Row[]) {
             /* Manually overwrite all of the properties of the DataFrame */
             this.columns = columns;
             this.dtypes = dtypes;
@@ -388,7 +398,7 @@ namespace fr {
         }
    
 
-        add_column(columnName: string, values: CellValue[] | CellValue): DataFrame {
+        add_column(columnName: string, values: CellValue[] | CellValue, inplace:boolean = false): DataFrame {
             let new_df = this.copy();
 
             let inp_values: CellValue[];
@@ -416,6 +426,7 @@ namespace fr {
                 row[columnName] = inp_values[index]
             });
 
+            this.__assign_inplace(new_df,inplace);
             return new_df;
         }
 
@@ -1020,13 +1031,13 @@ namespace fr {
             try{
                 this.to_worksheet(ExportSheet, 'o');
             }
-            catch (e){
+            catch{
                 //Delete sheet after catching an error
                 ExportSheet.delete();
                 throw new SyntaxError("Error writing formulas to workbook. Likely incorrect formula syntax");
             }
             
-            let calculated_df = new DataFrame(ExportSheet.getUsedRange().getValues());
+            let calculated_df = fr.read_sheet(ExportSheet)
             ExportSheet.delete();
 
             if (inplace){
@@ -1283,7 +1294,7 @@ namespace fr {
 }
 
 function main(workbook: ExcelScript.Workbook) {
-  //YOUR CODE GOES HERE
-  // See full documentation and usage instructions here: https://joeyrussoniello.github.io/frosts/
-  
+    // See full documentation at: https://joeyrussoniello.github.io/frosts/
+
+    //YOUR CODE GOES HERE
 }
