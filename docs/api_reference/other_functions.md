@@ -1,6 +1,10 @@
 # 📘Reading and Cleaning Data
 
-Frosts provides a simple and flexible API for importing data from a variety of sources — Excel sheets, ranges, JSON, or raw CSV text. These functions return a `DataFrame` you can immediately work with.
+This section documents the `fr` namespace — a collection of **import helpers** and **utility functions** designed to make data ingestion and lightweight transformation easy in `frosts`.
+
+The functions in this section allow frosts to read from Excel, CSV, and JSON documents, as well as perform optimized mathematical operations with minimal code.
+
+---
 
 📚 Table of Contents
 
@@ -8,8 +12,18 @@ Frosts provides a simple and flexible API for importing data from a variety of s
 - [`📄 read_sheet()`](#frread_sheetsheet-excelscriptworksheet-dataframe)
 - [`⏭️ read_after()`](#frread_aftersheet-excelscriptworksheet-n_rows-number-n_cols-number-dataframe)
 - [`🧾 read_json()`](#frread_jsonjsonstringdataframe)
-- [`📑 read_csv()`](#read_csvinput_text-string-errors-raise--coerce--raisestart_index-number0-line_separatorstring--n-dataframe)
-- [`🔁 to_numeric()`](#frto_numericvaluesstringnumberbooleannumber)
+- [`📑 read_csv()`](#frread_csvinput_text-string-errors-raise--coerce--raisestart_index-number0-line_separatorstring--n-dataframe)
+- [🧮 Numeric Utility Functions](#-fr-namespace-numeric-utility-functions)
+  - [`sum()`](#frsumvalues-number-number)
+  - [`mean()`](#frmeanvalues-number-number)
+  - [`min()`](#frminvalues-number-number)
+  - [`max()`](#frmaxvalues-number-number)
+  - [`range()`](#frrangevalues-number-number)
+  - [`product()`](#frproductvalues-number-number)
+  - [`count()`](#frcountvalues-number-number)
+  - [`to_numeric()`](#frto_numericvaluesstringnumberbooleannumber)
+
+--- 
 
 ## fr.read_range(range: ExcelScript.Range): DataFrame
 
@@ -96,7 +110,7 @@ Reads a JSON string and parses it into a DataFrame.
 
 ---
 
-## read_csv(input_text: string, errors: ("raise" | "coerce") = "raise",start_index: number=0, line_separator:string = "\n"): DataFrame
+## fr.read_csv(input_text: string, errors: ("raise" | "coerce") = "raise",start_index: number=0, line_separator:string = "\n"): DataFrame
 
 Reads a raw CSV string and returns a DataFrame.
 
@@ -126,7 +140,81 @@ Or skipping the first row:
 
 ---
 
-## fr.to_numeric(values:(string|number|boolean)[]):number[]
+## 🔢 fr Namespace: Numeric Utility Functions
+
+The `fr` namespace provides standard numeric reducers that can be used with `.map_cols_numeric()` and other operations that expect `(values: number[]) => number`.
+
+### [`fr.sum(values: number[]): number`](#frsumvalues-number-number)
+
+Returns the total sum of the values.
+
+```ts
+fr.sum([1, 2, 3]); // 6
+```
+
+---
+
+### [`fr.mean(values: number[]): number`](#frmeanvalues-number-number)
+
+Returns the arithmetic average of the values.
+
+```ts
+fr.mean([2, 4, 6]); // 4
+```
+
+---
+
+### [`fr.min(values: number[]): number`](#frminvalues-number-number)
+
+Returns the smallest number in the array.
+
+```ts
+fr.min([8, 3, 5]); // 3
+```
+
+---
+
+### [`fr.max(values: number[]): number`](#frmaxvalues-number-number)
+
+Returns the largest number in the array.
+
+```ts
+fr.max([8, 3, 5]); // 8
+```
+
+---
+
+### [`fr.range(values: number[]): number`](#frrangevalues-number-number)
+
+Returns the range (max - min) of the values.
+
+```ts
+fr.range([3, 6, 9]); // 6
+```
+
+---
+
+### [`fr.product(values: number[]): number`](#frproductvalues-number-number)
+
+Returns the product of all numbers in the array.
+
+```ts
+fr.product([2, 3, 4]); // 24
+```
+
+---
+
+### [`fr.count(values: number[]): number`](#frcountvalues-number-number)
+
+Returns the number of elements in the array.
+
+```ts
+fr.count([1, 5, 9]); // 3
+```
+
+---
+
+### fr.to_numeric(values:(string|number|boolean)[]):number[]
 
 Converts an array of strings (or mixed values) to numbers.
 Non-convertible values become `NaN`.

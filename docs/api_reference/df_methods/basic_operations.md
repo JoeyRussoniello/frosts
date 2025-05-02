@@ -22,10 +22,12 @@
     8. [`.fillna()`](#fill_nacolumnname-stringstringall-method-prev--next--value-value-string--number--booleandataframe)
     9. [`.melt()`](#meltnewcolumnname-string-newvaluenamestring-columnsstring-dataframe)
     10. [`.melt_except()`](#melt_exceptnewcolumnnamestring-newvaluenamestring-columnsstring-dataframe)
-3. [➕ Basic Row-Wise Operations](#-basic-row-wise-operations)
-    1. [`.operateColumns()`](#operatecolumnsoperator---------col1-string-col2-string-number)
-    2. [`.iterrows()`](#iterrows)
-    3. [`.apply()`](#applytfn-row-row--t-t)
+3. [➕ Row-Wise Operations](#-row-wise-operations)
+    1. [`.iterrows()`](#iterrows)
+    2. [`.apply()`](#applytfn-row-row--t-t)
+    3. [`.apply_numeric()`](#dfapply_numericfn-row--number-number)
+    4. [`.apply_string()`](#dfapply_stringfn-row--stringstring)
+    5. [`.map_cols_numeric()`](#dfmap_cols_numericfn-values--number-columns-number)
 
 ## ⚙️ DataFrame Utilities
 
@@ -674,7 +676,7 @@ Output:
 
 ---
 
-## ➕ Basic Row-Wise Operations
+## ➕ Row-Wise Operations
 
 ### `.operateColumns(operator: "* | + | - | /", col1: string, col2: string): number[]`
 
@@ -755,7 +757,7 @@ Applies a custom function to each row of the DataFrame and returns an array of r
 - `fn`: A callback that receives a single Row (i.e., an object mapping column names to values)
 - Returns a new array of the function outputs (one per row)
 
-> Note: Since row values may be of mixed type (string | number | boolean), explicit typecasting is often needed inside the callback.
+> Note: Since row values may be of mixed type (string | number | boolean), explicit typecasting is often needed inside the callback. If you are performing numerical operations and want to avoid this
 
 ```ts
 const df = new frosts.DataFrame([
@@ -774,7 +776,75 @@ console.log(doubled); // [180, 156]
 ```
 
 ---
-Now that you've learned how to manipulate and manage your data with basic operations like adding, renaming, and sorting columns, it's time to explore how to filter your DataFrame to focus on specific rows or subsets of data.
+
+### [`df.apply_numeric(fn: (row) => number): number[]`]
+
+Applies a function to each row after **coercing all values to numbers**, without the need for explicit typecasting.
+
+- Non-numeric values will become `NaN`.
+- No error is thrown for non-numeric columns.
+
+```ts
+df.apply_numeric(row => row["Revenue"] - row["Cost"]);
+```
+
+✅ Use when you want fast numeric row ops without manual casting.
+
+This is functionally equivalent to calling
+
+```ts
+df.apply(row => Number(row["Revenue"]) - Number(row["Cost"]));
+```
+
+without the tedious manual type casting.
+
+**This method may be slow for large datasets, as all values in the DataFrame are forced to numbers (even those not called by `fn`). For faster calculations on large datasets use [`df.map_cols_numeric()`](#dfmap_cols_numericfn-values--number-columns-number) and an [optimized frost operation](../other_functions.md)**
+
+---
+
+### `df.apply_string(fn: (row) => string):string[]
+
+Similarly to `.apply_numeric`, applies a function to each row after **coercing all values to strings** without the need for typecasting.
+
+```ts
+let full_name = df.apply_string(row => row["Last Name"]+", "+row["First Name"]); 
+```
+
+### `df.map_cols_numeric(fn: (values) => number, ...columns): number[]`
+
+Efficiently maps a numeric function over selected columns **row-wise**.
+
+- Validates that all selected columns are numeric using `. __check_numeric()`.
+- Only coerces the specified columns.
+- Returns an array of results, one per row.
+
+```ts
+df.map_cols_numeric(fr.mean, "January Income", "February Income", "March Income"); //Calculate average Q1 income per month
+```
+
+✅ Use when you're performing a numeric reduction over known columns — faster and safer than `.apply_numeric()` or `.apply()`.
+
+🧠 Function Flexibility
+
+You can pass in, any  function that takes a list of numbers and returns a number, or use one of the built-in utility functions in the `fr` namespace, such as `fr.sum`, `fr.mean`, `fr.max`, etc. *See a full list of provided numerical utility functions [here](../other_functions.md)*
+
+```ts
+//Example: Creating your own function 
+function weighted_grade(nums:number[]):number{ //Takes a number array and returns a number
+  //Unpack values, assuming we'll just use this for this purpose
+  let [assignments, assessments, final] = nums; 
+
+  //Return weighted grade
+  return assignments * 0.4 + assessments * 0.4 + final * 0.2 
+}
+
+let weighted_grades = df.map_cols_numeric(weighted_grade,"Assignments","Assessments","Final")
+let with_weighted = df.set_column("Weighted Grade",weighted_grades); //Add this list of values to our DataFrame
+```
+
+---
+
+Now that you've learned how to manipulate and manage your data with basic operations like adding, renaming, and sorting columns, it's time to explore how to filter your DataFrame to focus on specific rows or subsets.
 
 In the next section, you'll discover how to apply conditions and criteria to select only the data you need, enabling more powerful data analysis and transformation.
 
