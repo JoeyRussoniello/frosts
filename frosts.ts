@@ -470,11 +470,12 @@ namespace fr {
 
             // Convert to DataFrame format
             const resultData = [newColumns, ...newValues.map(row => newColumns.map(col => row[col]))];
+            
 
             return new DataFrame(resultData);
         }
 
-        filter(key: string, predicate: (value: CellValue) => boolean): DataFrame {
+        filter(key: string, predicate: (value: CellValue) => boolean, inplace:boolean = false): DataFrame {
             // Check if the key exists in the dataframe
             this.__check_membership(key);
 
@@ -482,7 +483,10 @@ namespace fr {
             const filteredValues = this.values.filter(row => predicate(row[key]));
 
             // Create a new DataFrame with only the filtered rows
-            return new DataFrame([this.columns, ...filteredValues.map(row => this.columns.map(col => row[col]))]);
+            let output = new DataFrame([this.columns, ...filteredValues.map(row => this.columns.map(col => row[col]))]);
+
+            this.__assign_inplace(output,inplace);
+            return output;
         }
 
         // 1. Count non-null values per column
@@ -772,7 +776,7 @@ namespace fr {
             return new DataFrame(dataArray);
         }
 
-        sortBy(columns: string[], ascending: boolean[] = []): DataFrame {
+        sortBy(columns: string[], ascending: boolean[] = [], inplace:boolean = false): DataFrame {
             // Ensure all columns exist in the DataFrame
             columns.forEach(col => this.__check_membership(col));
 
@@ -798,7 +802,10 @@ namespace fr {
                 ...sortedRows.map(row => this.columns.map(col => row[col]))
             ];
 
-            return new DataFrame(dataArray);
+            let output = new DataFrame(dataArray);
+
+            this.__assign_inplace(output,inplace)
+            return output;
         }
 
         merge(other: DataFrame, on: string[], how: "inner" | "left" | "outer" = "inner"): DataFrame {
@@ -878,7 +885,7 @@ namespace fr {
             return JSON.stringify(this.to_array(headers));
         }
 
-        rename(columnsMap: { [oldName: string]: string }): DataFrame {
+        rename(columnsMap: { [oldName: string]: string }, inplace:boolean): DataFrame {
             // Make sure all keys in columnsMap exist in the DataFrame
             for (let oldCol in columnsMap) {
                 this.__check_membership(oldCol);
@@ -889,15 +896,18 @@ namespace fr {
 
             // Rebuild the data array with updated headers
 
-            return new DataFrame([newColumns, ...this.to_array(false)]);
+            let output = new DataFrame([newColumns, ...this.to_array(false)]);
+
+            this.__assign_inplace(output,inplace)
+            return output
         }
 
-        add_formula_column(columnName: string, formula: string): DataFrame {
+        add_formula_column(columnName: string, formula: string, inplace:boolean = false): DataFrame {
             /* Append a table-style formula column
             Example: [@Col1] + [@Col2]
             */
             let formula_col: string[] = Array(this.shape()[0]).fill(formula);
-            return this.add_column(columnName, formula_col);
+            return this.add_column(columnName, formula_col,inplace);
         }
 
         fill_na(columnName: (string | string[] | "ALL"), method: ("prev" | "next" | "value"), value?: CellValue): DataFrame {
@@ -1040,9 +1050,7 @@ namespace fr {
             let calculated_df = fr.read_sheet(ExportSheet)
             ExportSheet.delete();
 
-            if (inplace){
-                this.__assign_properties(...calculated_df.__extract_properties());
-            }
+            this.__assign_inplace(calculated_df,inplace);
             return calculated_df
         }
 
@@ -1150,44 +1158,70 @@ namespace fr {
 
         print(n_rows: number = 5) {
             const totalRows = this.values.length;
+            const totalCols = this.columns.length;
             const headers = this.columns;
 
             const headRows = this.head(n_rows).values;
             const tailRows = this.tail(n_rows).values;
-
             const rowsToPrint = totalRows <= n_rows * 2 ? this.values : [...headRows, "...", ...tailRows];
 
-            // Convert values to array of arrays for consistent handling
+            let displayColumns: string[];
+            let colIndices: number[];
+
+            if (totalCols <= 4) {
+                displayColumns = [...headers];
+                colIndices = displayColumns.map((_, i) => i);
+            } else {
+                // Truncate: first 2, ..., last 2
+                displayColumns = [
+                    ...headers.slice(0, 2),
+                    "...",
+                    ...headers.slice(-2)
+                ];
+
+                colIndices = [
+                    ...[0, 1],
+                    -1, // placeholder for ellipsis
+                    ...[totalCols - 2, totalCols - 1]
+                ];
+            }
+
+            // Prepare display rows
             const dataArray = rowsToPrint.map(row => {
                 if (row === "...") return "...";
-                return headers.map(col => row[col] !== undefined ? String(row[col]) : "");
+
+                return colIndices.map(idx => {
+                    if (idx === -1) return "...";
+                    const col = headers[idx];
+                    return row[col] !== undefined ? String(row[col]) : "";
+                });
             });
 
-            // Calculate column widths based on max length
-            const colWidths = headers.map((header, i) => {
-                const maxDataWidth = dataArray.reduce((max, row) => {
-                    if (row === "...") return max;
-                    return Math.max(max, row[i]?.length || 0);
-                }, header.length);
-                return maxDataWidth;
+            // Compute column widths
+            const colWidths = displayColumns.map((col, i) => {
+                return Math.max(
+                    col.length,
+                    ...dataArray.map(row => row === "..." ? 3 : (row[i]?.length || 0))
+                );
             });
 
-            // Format header and divider
             const pad = (text: string, width: number) => text.padEnd(width, " ");
-            const headerRow = "| " + headers.map((h, i) => pad(h, colWidths[i])).join(" | ") + " |";
+
+            // Render header + divider
+            const headerRow = "| " + displayColumns.map((h, i) => pad(h, colWidths[i])).join(" | ") + " |";
             const divider = "| " + colWidths.map(w => "-".repeat(w)).join(" | ") + " |";
 
-            // Format data rows
+            // Render each data row
             const dataRows = dataArray.map(row => {
                 if (row === "...") {
                     return "| " + colWidths.map(w => pad("...", w)).join(" | ") + " |";
-                } else {
-                    return "| " + row.map((val, i) => pad(val, colWidths[i])).join(" | ") + " |";
                 }
+                return "| " + row.map((val, i) => pad(val, colWidths[i])).join(" | ") + " |";
             });
 
-            let [number_of_df_rows, n_cols] = this.shape();
-            let size_statement = `(${number_of_df_rows} rows x ${n_cols} columns)`
+            const [n_rows_df, n_cols_df] = this.shape();
+            const size_statement = `(${n_rows_df} rows x ${n_cols_df} columns)`;
+
             console.log([headerRow, divider, ...dataRows, "", size_statement].join("\n"));
         }
 
@@ -1220,7 +1254,7 @@ namespace fr {
             }
         }
 
-        __overwrite_to_table(table: ExcelScript.Table) {
+        private __overwrite_to_table(table: ExcelScript.Table) {
             let table_rng = table.getRange();
             let n_table_rows = Number(table_rng.getLastRow().getEntireRow().getAddress().split(":")[1]) - 1;
             let n_table_cols = table.getHeaderRowRange().getValues()[0].length;
@@ -1257,7 +1291,7 @@ namespace fr {
             table_start.getResizedRange(n_df_rows, n_df_cols - 1).setValues(overwrite_vals);
         }
 
-        __append_to_table(table: ExcelScript.Table) {
+        private __append_to_table(table: ExcelScript.Table) {
             let rng = table.getRange();
             let first_cell = rng.getLastRow().getCell(0, 0).getOffsetRange(1, 0);
 
@@ -1297,4 +1331,5 @@ function main(workbook: ExcelScript.Workbook) {
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
 
     //YOUR CODE GOES HERE
+    
 }
