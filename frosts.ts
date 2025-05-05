@@ -1328,12 +1328,47 @@ namespace fr {
                 default: throw new SyntaxError("Table write method must either be 'o' (overwrite), or 'a' (append).")
             }
         }
+
+        pivot(index: string, columns:string, values:string, aggFunc: ("sum" | "mean" | "count" | "min" | "max" | "std_dev") = "count", fillNa:CellValue = null){
+            this.__check_membership(index);
+            this.__check_membership(columns);
+            this.__check_membership(values);
+
+            let grouped = this.groupBy(
+                [index, columns],
+                [values],
+                [aggFunc]
+            );
+
+            //Get unique row and columns
+            const rowKeys = grouped.unique(index).get_column(index);
+            const colKeys = grouped.unique(columns).get_column(columns);
+
+            //Read from the grouped table to a hashmap
+            let lookup: {[key:string]: CellValue} = {};
+            grouped.values.forEach(row => {
+                let key = [row[index],row[columns]].join(SEPARATOR);
+                let val = row[`${values}_${aggFunc}`];
+                lookup[key] = val;
+            });
+
+            //Assemble into Matrix 
+            const headers = [index, ...colKeys];
+            let data = rowKeys.map(rowKey => {
+                let colVals = colKeys.map(colKey => {
+                    let key = [rowKey, colKey].join(SEPARATOR);
+                    return lookup[key] ?? fillNa;
+                    });
+                return [rowKey,...colVals]
+            });
+
+            return new DataFrame([headers,...data])
+        }
     }
 }
 
 function main(workbook: ExcelScript.Workbook) {
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
     // YOUR CODE GOES HERE
-
     
 }

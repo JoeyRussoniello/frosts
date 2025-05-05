@@ -4,11 +4,73 @@ Aggregation methods allow you to summarize and combine your data in meaningful w
 
 ## Table of Contents
 
-1. [`.groupby()`](#groupbygroup_keys-valuecols-aggfuncs)
-2. [`.describe()`](#describe)
-3. [Column Aggregation Methods](#column-aggregation-functions)
+1. [`.pivot()`](#pivotindex-columns-values-aggfunc--count-fillna--null)
+2. [`.groupby()`](#groupbygroup_keys-valuecols-aggfuncs)
+3. [`.describe()`](#describe)
+4. [Column Aggregation Methods](#column-aggregation-functions)
 
 ## Aggregation Functions
+
+### `.pivot(index, columns, values, aggFunc = "count", fillNa = null)`
+
+The `.pivot()` method reshapes a DataFrame by turning unique values from one column into new columns, using another column for row labels and a third for filling in the data. It performs an aggregation (like `sum`, `mean`, `count`, etc.) on the data values in case of duplicates. This is useful for generating cross-tab summaries or Excel-style pivot tables.
+
+#### Parameters
+
+- `index`: `string`  
+  The column whose unique values will become the rows of the output table.
+- `columns`: `string`  
+  The column whose unique values will become the new columns in the output table.
+- `values`: `string`  
+  The column containing the values to aggregate and place in the matrix.
+- `aggFunc`: `string` (default: `"count"`)  
+  The aggregation function to apply to the values column in case multiple entries exist for the same row/column combination. Supported functions include:
+  - `'sum'`: Sum of values
+  - `'mean'`: Average of values
+  - `'min'`: Minimum value
+  - `'max'`: Maximum value
+  - `'count'`: Number of entries
+  - `'std_dev'`: Sample standard deviation
+
+- `fillNa`: `CellValue` (default: `null`)  
+  Value to use for empty cells where no matching data exists.
+
+#### Returns
+
+A new DataFrame where:
+
+- Each row corresponds to a unique value from the `index` column.
+- Each column corresponds to a unique value from the `columns` column.
+- Cell values are computed by applying the aggregation function to the `values` column.
+
+---
+
+#### Pivoting on Department and City
+
+```ts
+// Pivot the average salary by City and Department
+const result = df.pivot("City", "Department", "Salary", "mean");
+console.log(result.values);
+/*
+Returns:
+[
+  { City: "Chicago", Engineering: 98000, HR: 91000, ... },
+  { City: "New York", Engineering: 112000, HR: 92000, ... },
+  ...
+]
+*/
+```
+
+In this example:
+
+- `"City"` becomes the index (row labels)
+- `"Department"` values become column headers
+- `"Salary"` is the value being aggregated
+- `"mean"` computes the average salary for each `(City, Department)` pair
+
+If a city-department combination does not exist in the data, the corresponding cell will be `null` unless a `fillNa` value is specified.
+
+---
 
 ### `.groupBy(group_keys, valueCols, aggFuncs)`
 
