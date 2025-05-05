@@ -116,13 +116,17 @@ namespace fr {
         //Determine splitting method, then split
         if (cleaned_text.includes(line_separator)) {
             line_split_arr = cleaned_text.split(line_separator);
+            // Remove last line if it's empty or whitespace
+            if (line_split_arr.length > 0 && line_split_arr[line_split_arr.length - 1].trim() === "") {
+                line_split_arr.pop();
+            }
         }
         else {
             console.log(`No split marker in ${cleaned_text}`);
         }
 
         let output: string[][] = line_split_arr.map(row => row.split(","))
-
+        
         //Find sizes and reshape array to ensure that the input is square and importable
 
         const maxLength = output.reduce((max, row) => Math.max(max, row.length), 0);
@@ -146,11 +150,11 @@ namespace fr {
         return column.map(row => parseFloat(row.toString()));
     }
 
-    export function combine_dfs(dfs: DataFrame[], columnSelection: ("inner" | "outer" | "left") = "outer"):DataFrame{
-        if (dfs.length == 0){
+    export function combine_dfs(dfs: DataFrame[], columnSelection: ("inner" | "outer" | "left") = "outer"): DataFrame {
+        if (dfs.length == 0) {
             throw RangeError("Please input at least 1 DataFrame to use combine_dfs()")
         }
-        else if (dfs.length == 1){
+        else if (dfs.length == 1) {
             return dfs[0];
         }
 
@@ -158,33 +162,33 @@ namespace fr {
         return base_df.concat_all(columnSelection, ...dfs.slice(1));
     }
 
-    export function sum(nums: number[]):number{
-        return nums.reduce((acc, x) => acc + x,0);
+    export function sum(nums: number[]): number {
+        return nums.reduce((acc, x) => acc + x, 0);
     }
-    export function count(nums: number[]):number{
+    export function count(nums: number[]): number {
         return nums.filter(x => !isNaN(x)).length;
     }
-    export function mean(nums:number[]):number{
-        return sum(nums)/nums.length;
+    export function mean(nums: number[]): number {
+        return sum(nums) / nums.length;
     }
-    export function min(nums:number[]):number{
+    export function min(nums: number[]): number {
         return Math.min(...nums);
     }
-    export function max(nums:number[]):number{
+    export function max(nums: number[]): number {
         return Math.max(...nums);
     }
-    export function range(nums:number[]):number{
+    export function range(nums: number[]): number {
         return max(nums) - min(nums);
     }
-    export function product(nums:number[]):number{
+    export function product(nums: number[]): number {
         return nums.reduce((acc, x) => acc * x, 1);
     }
 
-    export function row_to_array(row:Row):CellValue[]{
+    export function row_to_array(row: Row): CellValue[] {
         return Object.values(row);
     }
 
-    export type CellValue = string|number|boolean; //Improve type clarity
+    export type CellValue = string | number | boolean; //Improve type clarity
     export type Row = { [key: string]: CellValue };
 
     export class DataFrame {
@@ -228,13 +232,13 @@ namespace fr {
             });
         }
 
-        private __assign_inplace(other:DataFrame, inplace:boolean){
-            if (inplace){
+        private __assign_inplace(other: DataFrame, inplace: boolean) {
+            if (inplace) {
                 this.__assign_properties(...other.__extract_properties());
             }
         }
 
-        set_column(columnName: string, values: CellValue[], inplace:boolean = false): DataFrame {
+        set_column(columnName: string, values: CellValue[], inplace: boolean = false): DataFrame {
             if (this.values.length != values.length) {
                 throw new RangeError(`DataFrame and Input Dimensions Don't Match\nDataFrame has ${this.values.length} rows, while input values have ${values.length}`);
             }
@@ -251,7 +255,7 @@ namespace fr {
                 row[columnName] = values[index];
             }
 
-            this.__assign_inplace(output,inplace);
+            this.__assign_inplace(output, inplace);
             return output;
         }
 
@@ -380,7 +384,7 @@ namespace fr {
 
             //Align all rows in the combined dfs
             let allRows: Row[] = new Array(end_size);
-            
+
             let rowIndex = 0;
             for (const df of all_dfs) {
                 for (const row of df.values) {
@@ -396,9 +400,9 @@ namespace fr {
 
             return new DataFrame(dataMatrix);
         }
-   
 
-        add_column(columnName: string, values: CellValue[] | CellValue, inplace:boolean = false): DataFrame {
+
+        add_column(columnName: string, values: CellValue[] | CellValue, inplace: boolean = false): DataFrame {
             let new_df = this.copy();
 
             let inp_values: CellValue[];
@@ -426,7 +430,7 @@ namespace fr {
                 row[columnName] = inp_values[index]
             });
 
-            this.__assign_inplace(new_df,inplace);
+            this.__assign_inplace(new_df, inplace);
             return new_df;
         }
 
@@ -470,12 +474,12 @@ namespace fr {
 
             // Convert to DataFrame format
             const resultData = [newColumns, ...newValues.map(row => newColumns.map(col => row[col]))];
-            
+
 
             return new DataFrame(resultData);
         }
 
-        filter(key: string, predicate: (value: CellValue) => boolean, inplace:boolean = false): DataFrame {
+        filter(key: string, predicate: (value: CellValue) => boolean, inplace: boolean = false): DataFrame {
             // Check if the key exists in the dataframe
             this.__check_membership(key);
 
@@ -485,7 +489,7 @@ namespace fr {
             // Create a new DataFrame with only the filtered rows
             let output = new DataFrame([this.columns, ...filteredValues.map(row => this.columns.map(col => row[col]))]);
 
-            this.__assign_inplace(output,inplace);
+            this.__assign_inplace(output, inplace);
             return output;
         }
 
@@ -776,7 +780,7 @@ namespace fr {
             return new DataFrame(dataArray);
         }
 
-        sortBy(columns: string[], ascending: boolean[] = [], inplace:boolean = false): DataFrame {
+        sortBy(columns: string[], ascending: boolean[] = [], inplace: boolean = false): DataFrame {
             // Ensure all columns exist in the DataFrame
             columns.forEach(col => this.__check_membership(col));
 
@@ -804,7 +808,7 @@ namespace fr {
 
             let output = new DataFrame(dataArray);
 
-            this.__assign_inplace(output,inplace)
+            this.__assign_inplace(output, inplace)
             return output;
         }
 
@@ -885,7 +889,7 @@ namespace fr {
             return JSON.stringify(this.to_array(headers));
         }
 
-        rename(columnsMap: { [oldName: string]: string }, inplace:boolean): DataFrame {
+        rename(columnsMap: { [oldName: string]: string }, inplace: boolean=false): DataFrame {
             // Make sure all keys in columnsMap exist in the DataFrame
             for (let oldCol in columnsMap) {
                 this.__check_membership(oldCol);
@@ -898,16 +902,16 @@ namespace fr {
 
             let output = new DataFrame([newColumns, ...this.to_array(false)]);
 
-            this.__assign_inplace(output,inplace)
+            this.__assign_inplace(output, inplace)
             return output
         }
 
-        add_formula_column(columnName: string, formula: string, inplace:boolean = false): DataFrame {
+        add_formula_column(columnName: string, formula: string, inplace: boolean = false): DataFrame {
             /* Append a table-style formula column
             Example: [@Col1] + [@Col2]
             */
             let formula_col: string[] = Array(this.shape()[0]).fill(formula);
-            return this.add_column(columnName, formula_col,inplace);
+            return this.add_column(columnName, formula_col, inplace);
         }
 
         fill_na(columnName: (string | string[] | "ALL"), method: ("prev" | "next" | "value"), value?: CellValue): DataFrame {
@@ -1032,25 +1036,25 @@ namespace fr {
             //*/
         }
 
-        hardcode_formulas(workbook: ExcelScript.Workbook, inplace:boolean = true): DataFrame {
+        hardcode_formulas(workbook: ExcelScript.Workbook, inplace: boolean = true): DataFrame {
             /*
               Calculate and Hardcode all formula results in the input df. 
               Used to aggregate formula based calculations
             */
             let ExportSheet = workbook.addWorksheet(DEV_SHEET_NAME);
-            try{
+            try {
                 this.to_worksheet(ExportSheet, 'o');
             }
-            catch{
+            catch {
                 //Delete sheet after catching an error
                 ExportSheet.delete();
                 throw new SyntaxError("Error writing formulas to workbook. Likely incorrect formula syntax");
             }
-            
+
             let calculated_df = fr.read_sheet(ExportSheet)
             ExportSheet.delete();
 
-            this.__assign_inplace(calculated_df,inplace);
+            this.__assign_inplace(calculated_df, inplace);
             return calculated_df
         }
 
@@ -1083,7 +1087,7 @@ namespace fr {
             let melt_cols = Array.from(this.__headers).filter(col => !cols_set.has(col));
             return this.melt(newColumnName, newValueName, ...melt_cols);
         }
-        
+
         //General apply function, needs retyping
         apply<T>(fn: (row: Row) => T): T[] {
             return this.values.map(row => fn(row));
@@ -1104,16 +1108,16 @@ namespace fr {
         }
 
         //Used typed apply to cast apply as Strings and Nubmers
-        apply_numeric(fn: (row: {[key:string]:number}) => number):number[]{
-            return this.__apply_typed(fn, Number);    
+        apply_numeric(fn: (row: { [key: string]: number }) => number): number[] {
+            return this.__apply_typed(fn, Number);
         }
-        apply_string(fn: (row: {[key:string]:string}) => string):string[]{
-            return this.__apply_typed(fn,String);
+        apply_string(fn: (row: { [key: string]: string }) => string): string[] {
+            return this.__apply_typed(fn, String);
         }
 
-        map_cols_numeric(fn: (values: number[]) => number, ...columns:string[]):number[]{
+        map_cols_numeric(fn: (values: number[]) => number, ...columns: string[]): number[] {
             //Check that all columns are in the df, and that they're numeric
-            columns.forEach(c =>{
+            columns.forEach(c => {
                 this.__check_membership(c);
                 this.__check_numeric(c);
             })
@@ -1329,7 +1333,7 @@ namespace fr {
 
 function main(workbook: ExcelScript.Workbook) {
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
+    // YOUR CODE GOES HERE
 
-    //YOUR CODE GOES HERE
     
 }
