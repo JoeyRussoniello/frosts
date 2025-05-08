@@ -3,6 +3,8 @@ namespace fr {
     let SEPARATOR = "~~~";
     //ABSTRACT DEV SHEET NAME FOR FORMULA HARDCODING
     const DEV_SHEET_NAME = "___DEV_SHEET_NULL#859132";
+    //SAMPLE SIZE FOR TYPE CHECKING
+    const TYPE_DETECTION_SAMPLE_SIZE = 100;
 
     export function get_separator(): string {
         return SEPARATOR;
@@ -33,20 +35,25 @@ namespace fr {
             return "string"
         }
     }
-    function detectColumn(col: string[]): ("string" | "number" | "boolean") {
-        // Detect the type of each value in the column
-        let types = col.map(i => detectTypeFromString(i));
 
-        // Check if all types are the same
+    //Detect the type of a column from the first and last TYPE_DETECTION_SAMPLE_SIZE/2 entries
+    function detectColumn(col: string[]): ("string" | "number" | "boolean") {
+        let sample: string[];
+
+        if (col.length <= TYPE_DETECTION_SAMPLE_SIZE) {
+            sample = col;
+        } else {
+            const half = TYPE_DETECTION_SAMPLE_SIZE / 2;
+            sample = col.slice(0, half).concat(col.slice(-half));
+        }
+
+        const types = sample.map(v => detectTypeFromString(v));
         const uniqueTypes = Array.from(new Set(types));
 
-        // If there's only one unique type, return that type; otherwise, return "string"
-        if (uniqueTypes.length === 1) {
-            return uniqueTypes[0];
-        } else {
-            return "string";
-        }
+        //If the number of types spotted ins't 1, just coerce values to string
+        return uniqueTypes.length === 1 ? uniqueTypes[0] : "string";
     }
+
     function parseValue(input: CellValue, parse_method: ("string" | "number" | "boolean")): CellValue {
         switch (parse_method) {
             case "string": return input.toString();
@@ -126,7 +133,7 @@ namespace fr {
         }
 
         let output: string[][] = line_split_arr.map(row => row.split(","))
-        
+
         //Find sizes and reshape array to ensure that the input is square and importable
 
         const maxLength = output.reduce((max, row) => Math.max(max, row.length), 0);
@@ -199,7 +206,7 @@ namespace fr {
 
         constructor(data: CellValue[][]) {
             let str_data = data as string[][];
-            let headers = str_data[0];
+            let headers = str_data[0].map(s => s.trim()); //Trim all headers
             str_data = str_data.slice(1);
             this.dtypes = {};
 
@@ -889,7 +896,7 @@ namespace fr {
             return JSON.stringify(this.to_array(headers));
         }
 
-        rename(columnsMap: { [oldName: string]: string }, inplace: boolean=false): DataFrame {
+        rename(columnsMap: { [oldName: string]: string }, inplace: boolean = false): DataFrame {
             // Make sure all keys in columnsMap exist in the DataFrame
             for (let oldCol in columnsMap) {
                 this.__check_membership(oldCol);
@@ -1229,7 +1236,7 @@ namespace fr {
             console.log([headerRow, divider, ...dataRows, "", size_statement].join("\n"));
         }
 
-        validate_key(key: DataFrame, on: [string, string] | string, errors: ("raise" | "return") = "raise"): CellValue[] | void {
+        validate_key(key: DataFrame, on: [string, string] | string, errors: ("raise" | "return") = "raise"): CellValue[]{
             let left_on: string;
             let right_on: string;
 
@@ -1248,14 +1255,11 @@ namespace fr {
 
             let not_in_key = left_values.filter(v => !right_values.has(v));
 
-            if (not_in_key.length != 0) {
-                if (errors == "raise") {
-                    throw new Error(`KeyIncompleteError: The following values were not found in the selected key\n[${not_in_key.join(',')}]`)
-                }
-                else {
-                    return not_in_key;
-                }
+            if (errors == "raise" && not_in_key.length == 0) {
+                throw new Error(`KeyIncompleteError: The following values were not found in the selected key\n[${not_in_key.join(',')}]`);
             }
+
+            return not_in_key
         }
 
         private __overwrite_to_table(table: ExcelScript.Table) {
@@ -1329,7 +1333,7 @@ namespace fr {
             }
         }
 
-        pivot(index: string, columns:string, values:string, aggFunc: ("sum" | "mean" | "count" | "min" | "max" | "std_dev") = "count", fillNa:CellValue = null){
+        pivot(index: string, columns: string, values: string, aggFunc: ("sum" | "mean" | "count" | "min" | "max" | "std_dev") = "count", fillNa: CellValue = null) {
             this.__check_membership(index);
             this.__check_membership(columns);
             this.__check_membership(values);
@@ -1345,9 +1349,9 @@ namespace fr {
             const colKeys = grouped.unique(columns).get_column(columns);
 
             //Read from the grouped table to a hashmap
-            let lookup: {[key:string]: CellValue} = {};
+            let lookup: { [key: string]: CellValue } = {};
             grouped.values.forEach(row => {
-                let key = [row[index],row[columns]].join(SEPARATOR);
+                let key = [row[index], row[columns]].join(SEPARATOR);
                 let val = row[`${values}_${aggFunc}`];
                 lookup[key] = val;
             });
@@ -1358,11 +1362,11 @@ namespace fr {
                 let colVals = colKeys.map(colKey => {
                     let key = [rowKey, colKey].join(SEPARATOR);
                     return lookup[key] ?? fillNa;
-                    });
-                return [rowKey,...colVals]
+                });
+                return [rowKey, ...colVals]
             });
 
-            return new DataFrame([headers,...data])
+            return new DataFrame([headers, ...data])
         }
     }
 }
