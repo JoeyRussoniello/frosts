@@ -169,6 +169,7 @@ namespace fr {
         return base_df.concat_all(columnSelection, ...dfs.slice(1));
     }
 
+    //FROST HELPER CALLBACKS TO REDUCE REPETITIVE CODE
     export function sum(nums: number[]): number {
         return nums.reduce((acc, x) => acc + x, 0);
     }
@@ -190,6 +191,17 @@ namespace fr {
     export function product(nums: number[]): number {
         return nums.reduce((acc, x) => acc * x, 1);
     }
+    
+    export const is_blank = (v:CellValue) => v == "";
+    export const not_blank = (v: CellValue) => v != "";
+
+    export function not_equal(value: CellValue): (v: CellValue) => boolean {
+        return (v: CellValue) => v != value
+    }
+    export function equal(value: CellValue): (v: CellValue) => boolean {
+        return (v: CellValue) => v == value;
+    }
+
 
     export function row_to_array(row: Row): CellValue[] {
         return Object.values(row);
@@ -1367,6 +1379,29 @@ namespace fr {
             });
 
             return new DataFrame([headers, ...data])
+        }
+
+        /**
+         * Adds a new column with values extracted from header rows and propagated downward.
+         * 
+         * @param columnName - Name of the column to create
+         * @param isHeaderRow - Function that detects if a row is a header
+         * @param extractValue - Function that extracts the value from the header row
+         * @param keepHeaders - Boolean on whether you'd like to keep the rows flagged as headers in the output DataFrame.
+         * @returns A new DataFrame with the header values encoded in the new column
+         */
+        encode_headers(columnName:string, isHeaderRow: (row: Row)=> boolean, extractValue: (row:Row)=>CellValue, keepHeaders:boolean = false):DataFrame{
+            let current_header:CellValue = "";
+            let series = this.values.map(row => {
+                if (isHeaderRow(row)){
+                    current_header = extractValue(row);
+                }
+                return current_header;
+            })
+
+            let output = this.set_column(columnName,series,false);
+            //If keepHeaders = false, remove headerRows from the output
+            return keepHeaders ? output : output.query(row => !isHeaderRow(row)); 
         }
     }
 }
