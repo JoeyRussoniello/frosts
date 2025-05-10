@@ -36,7 +36,7 @@ console.log(adults.values);
 */
 ```
 
-Or with any function that takes one value as an input
+with any function that takes one value as an input
 
 ```ts
 const data = [
@@ -59,6 +59,12 @@ console.log(df.filter("Num", is_even));
 {Num: 4}
 ]
 */
+```
+
+Or with any of the built-in frosts predicates for filtering (Read More in the [Data Cleaning Section](../cleaning_data.md))
+
+```ts
+const alices = df.filter("Name",fr.predicates.equal("Alice"))
 ```
 
 ---

@@ -154,7 +154,12 @@ namespace fr {
     }
 
     export function to_numeric(column: CellValue[]): number[] {
-        return column.map(row => parseFloat(row.toString()));
+        return column.map(row => {
+            if (row == null){
+                return NaN
+            }
+            return parseFloat(row.toString())
+        });
     }
 
     export function combine_dfs(dfs: DataFrame[], columnSelection: ("inner" | "outer" | "left") = "outer"): DataFrame {
@@ -192,15 +197,26 @@ namespace fr {
         return nums.reduce((acc, x) => acc * x, 1);
     }
     
-    export const is_blank = (v:CellValue) => v == "";
-    export const not_blank = (v: CellValue) => v != "";
+    export type BooleanPredicate = (v: CellValue) => boolean;
 
-    export function not_equal(value: CellValue): (v: CellValue) => boolean {
-        return (v: CellValue) => v != value
-    }
-    export function equal(value: CellValue): (v: CellValue) => boolean {
-        return (v: CellValue) => v == value;
-    }
+    export const predicates = {
+        is_blank: (v: CellValue) => v == "",
+        is_nan: (v: CellValue) => isNaN(Number(v)),
+        equal: (target: CellValue): BooleanPredicate=> (v) => v == target,
+        includes: (substring: string): BooleanPredicate => (v) => v.toString().includes(substring),
+        starts_with: (target: string): BooleanPredicate =>  (v) => {
+            let v_string = v.toString();
+            if (v_string.length < target.length){return false}
+            return v_string.slice(0, target.length) == target;
+        },
+        ends_with: (target:string): BooleanPredicate => (v) => {
+            let v_string = v.toString();
+            if (v_string.length < target.length){return false}
+            return v_string.slice(v_string.length - target.length) == target;
+        }
+    };
+
+    export const not = (predicate: BooleanPredicate): BooleanPredicate => (v) => !predicate(v);
 
 
     export function row_to_array(row: Row): CellValue[] {

@@ -1,53 +1,98 @@
 # Cleaning Data
 
-Many real-world Excel files contain messy, incomplete, or inconsistent values. To simplify cleaning tasks, `frosts` provides convenient **helper functions** for common checks like blank cells or matching values, and built in **DataFrame methods** for common cleaning patterns.
+Many real-world Excel files contain messy, incomplete, or inconsistent values. To simplify cleaning tasks, `frosts` provides a **predicates** submodule for common checks like blank cells or matching values, as well as built in **DataFrame methods** for common cleaning patterns.
 
 ## Table Of Contents
 
-1. [`Helper Functions and Filtering`](#quick-reference-helper-functions)
+1. [`Filtering with Predicates`](#the-predicates-submodule-boolean-predicates-and-filtering)
 2. [`encode_headers()`](#encode_headers)
 3. [`fill_na()`](#fill_nacolumnname-stringstringall-method-prev--next--value-value-string--number--booleandataframe)
 4. [`melt() and melt_except()`](#meltnewcolumnname-string-newvaluenamestring-columnsstring-dataframe)
 
-## Quick Reference: Helper Functions
+## The `predicates` submodule, Boolean Predicates, and filtering
 
-### `is_blank(value: CellValue): boolean`
+To reduce repetitive code and overwhelming custom predicates for new programmers, frosts comes equipped with several out-of-box Boolean returning predicates that can easily be used with `df.filter()` for data cleaning. All predicates can be called with
+
+```ts
+fr.predicates.predicate_name        //For predicates without inputs like is_blank, and is_nan
+fr.predicates.predicate_name(value) //For predicates with inputs like equals, and includes
+```
+
+All frosts given predicates can also be negated with `fr.not()`. For example, to filter out blanks in a column you could use
+
+```ts
+df.filter("Header",fr.not(fr.predicates.is_blank))
+```
+
+If these negation calls become too lengthy, consider *aliasing* fr.predicates() and fr.not() as follows
+
+```ts
+//Aliasing Commands
+const pr = fr.predicates;
+const not = fr.not;
+
+//Simplified filter calls
+df.filter("Header",not(pr.is_blank))
+df.filter("Header",not(pr.includes("East Coast:")))
+```
+
+### `is_blank`
 
 Returns `true` if the value is a blank string (`""`).
 
 ```ts
-df.filter("Status", is_blank)
+df.filter("Status", fr.predicates.is_blank)
+```
+
+> **Note:** this is a equality-like `==` check, not strict equality `===` so is_blank will also match 0s and nulls, but **NOT** with `NaNs` in numeric columns.
+
+### `is_nan`
+
+Returns `true` if the row value is `NaN`. Used instead of `is_blank` for numeric columns
+
+```ts
+df.filter("Sales", fr.predicates.is_nan)
 ```
 
 ---
 
-### `not_blank(value: CellValue): boolean`
+### `equal(value: CellValue)`
 
-Returns `true` if the value is *not* a blank string.
+Checks if row values equal the given `value`.
 
 ```ts
-df.filter("Email", not_blank)
+df.filter("Status", fr.predicates.equal("Active")) //Filters to only have rows with an "Active" Status.
 ```
 
 ---
 
-### `equal(value: CellValue): (v: CellValue) => boolean`
+### `includes(value: string)`
 
-Returns a function that checks if a value equals the given `value`.
+Check if row values include the `value` text
 
 ```ts
-df.filter("Status", equal("Active"))
+let east_coast = df.filter("Region - Property", fr.predicates.includes("East"))
+```
+
+Sicne the `.includes()` method only works on strings, the numeric/boolean values will be *coerced* to strings for this check.
+
+---
+
+### `starts_with(value: string)`
+
+Checks if row values start with the `value` text
+
+```ts
+df.filter("Region", fr.predicates.starts_with("East"))
 ```
 
 ---
 
-### `not_equal(value: CellValue): (v: CellValue) => boolean`
+### `ends_with(value: string)`
 
-Returns a function that checks if a value does *not* equal the given `value`.
+Similarly, to `begins_with`, checks if row values end with the `value` text
 
-```ts
-df.filter("Type", not_equal("Header"))
-```
+> For custom predicates and advanced data filtering for data cleaning, read more in the [Filtering](df_methods/filtering.md) section
 
 ---
 
@@ -86,7 +131,7 @@ A new `DataFrame` with the extracted header values encoded in the specified colu
 
 ## Example
 
-Suppose you have an Excel export like this:
+Suppose you have an Excel export of this form:
 
 | A                                         | Sales       | Variance to Budget       |
 |------------------------------------------|---------|---------|
