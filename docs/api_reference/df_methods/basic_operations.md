@@ -11,6 +11,7 @@
     6. [`.tail()`](#tailn_rows-number--10-dataframe)
     7. [`.print()`](#printn_rows-number--5-void)
     8. [`.unique()`](#uniquecolumns-string-dataframe)
+    9. [`.is_empty()`](#is_emptyboolean)
 2. [🗂️ Column Management](#️-column-management)
     1. [`.add_column()`](#add_columncolumnname-string-values-stringnumberboolean-inplaceboolean--falsedataframe)
     2. [`.drop()`](#dropkeysstringdataframe)
@@ -279,6 +280,14 @@ Output:
 | Alice    | 2024-01-01 |
 | Bob      | 2024-01-01 |
 | Alice    | 2024-01-02 |
+
+---
+
+## .is_empty():boolean
+
+Returns **true** if the DataFrame has no values, and **false** if there is a single `fr.Row` present in the dataframe.
+
+Especially useful after filtering or before exporting a DataFrame to ensure that it is has values before continuing with data processing/aggregation.
 
 ---
 

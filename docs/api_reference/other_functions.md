@@ -1,4 +1,4 @@
-# 📘Reading and Cleaning Data
+# Reading and Processing Data
 
 This section documents the `fr` namespace — a collection of **import helpers** and **utility functions** designed to make data ingestion and lightweight transformation easy in `frosts`.
 
@@ -21,6 +21,8 @@ The functions in this section allow frosts to read from Excel, CSV, and JSON doc
   - [`range()`](#frrangevalues-number-number)
   - [`product()`](#frproductvalues-number-number)
   - [`count()`](#frcountvalues-number-number)
+  - [`today`](#frtodaynumber)
+  - [`toExcelDate()`](#toexceldatejsdate-date-include_timeboolean-number)
   - [`to_numeric()`](#frto_numericvaluesstringnumberbooleannumber)
 
 --- 
@@ -213,6 +215,34 @@ fr.count([1, 5, 9]); // 3
 ```
 
 ---
+
+### `fr.today:number`
+
+Returns today's date in Excel Numeric Date Format. Useful for timestamping imports / data modifications
+
+---
+
+### `toExcelDate(jsDate: Date, include_time:boolean): number`
+
+Converts a JavaScript `Date` into an Excel numerical date
+
+- `jsDate`: The Input date to convert to Excel style.
+- `include_time`: Whether you'd like the time of the JS Date to be held in the Excel Date (default `true`).
+
+```ts
+//Create a date that is 1/1/2000
+    let y2k = new Date()
+    y2k.setFullYear(2000)
+    y2k.setMonth(0,1);
+    
+    //Export it to excel style including the timestamp
+    console.log(fr.toExcelDate(y2k));
+    //OUTPUT: 36526.799797291664
+    
+    //Export to excel style without the timestamp
+    console.log(fr.toExcelDate(y2k,false))
+    //OUTPUT: 36526
+```
 
 ### fr.to_numeric(values:(string|number|boolean)[]):number[]
 
