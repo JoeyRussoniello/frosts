@@ -26,6 +26,7 @@
     3. [`.apply_numeric()`](#dfapply_numericfn-row--number-number)
     4. [`.apply_string()`](#dfapply_stringfn-row--stringstring)
     5. [`.map_cols_numeric()`](#dfmap_cols_numericfn-values--number-columns-number)
+    6. [`.replace_column()`]()
 
 ## ⚙️ DataFrame Utilities
 
@@ -717,6 +718,45 @@ let with_weighted = df.set_column("Weighted Grade",weighted_grades); //Add this 
 
 ---
 
+## `replace_column(columnName: string, fn: (value: CellValue, index?: number) => CellValue, inplace: boolean = false): DataFrame`
+
+**Applies a transformation function to a column and replaces its values.**
+Each value in the specified column is passed through the provided function. The transformed column is returned as a new DataFrame unless inplace is set to true.
+
+### Arguments
+
+- `columnName:string` - The name of the column to replace
+- `fn` - The predicate function to apply to the values in columnNamn (optionally using its index)
+- `inplace`: Default false - If true, replaces the DataFrame in place, if false returns a new df.
+
+Why to Use:
+
+Often these `.apply()` and `.set_column` patterns can get tedious. If you would like to peform an operation all at once, consider using .`replace_columns()` instead.
+
+### Example
+
+```ts
+let df = new fr.DataFrame([
+  ["Item", "Price"],
+  ["Apple", 1.5],
+  ["Banana", 2.0]
+]);
+
+let updated = df.replace_column("Price", v => Number(v) * 2);
+updated.print();
+
+```
+
+### Output
+
+┌────────┬──────┐
+│ Item   │ Price│
+├────────┼──────┤
+│ Apple  │ 3    │
+│ Banana │ 4    │
+└────────┴──────┘
+
+---
 Now that you've learned how to manipulate and manage your data with basic operations like adding, renaming, and sorting columns, it's time to explore how to filter your DataFrame to focus on specific rows or subsets.
 
 In the next section, you'll discover how to apply conditions and criteria to select only the data you need, enabling more powerful data analysis and transformation.

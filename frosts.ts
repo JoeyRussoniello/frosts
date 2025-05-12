@@ -144,12 +144,11 @@ namespace fr {
                 }
                 else {
                     while (row.length < maxLength) {
-                        row.push(null);
+                        row.push("");
                     }
                 }
             }
         });
-
         return new DataFrame(output.slice(start_index));
     }
 
@@ -239,7 +238,46 @@ namespace fr {
     }
 
     export type CellValue = string | number | boolean; //Improve type clarity
-    export type Row = { [key: string]: CellValue };
+    export type Row = { [key: string]: CellValue }; //Loose Row Type for General Handling
+    export type Operation = ("sum" | "mean" | "count" | "min" | "max" | "std_dev");
+    //Strict Row Type For Access in iterrows() and filter9)
+    export interface FrostRow {
+        get(key: string): CellValue;
+        get_number(key: string): number;
+        get_string(key: string): string;
+        get_boolean(key: string): boolean;
+        keys(): string[];
+        raw: Row; // in case user wants to fallback
+    }
+
+    //Wrap a Row as a FrostRow
+    function toFrostRow(row: Row): FrostRow {
+        return {
+            get: (key) => row[key],
+            get_number: (key) => {
+                const val = row[key];
+                const n = Number(val);
+                if (isNaN(n)) throw new TypeError(`Value for "${key}" is not a number: ${val}`);
+                return n;
+            },
+            get_string: (key) => {
+                const val = row[key];
+                if (val == null) return "";
+                return String(val);
+            },
+            get_boolean: (key) => {
+                const val = row[key];
+                if (typeof val === "boolean") return val;
+                if (typeof val === "string") return val.toLowerCase() === "true";
+                if (typeof val === "number") return val !== 0;
+                return false;
+            },
+            keys: () => Object.keys(row),
+            raw: row
+        };
+    }
+
+
 
     export class DataFrame {
         columns: string[]
@@ -308,6 +346,16 @@ namespace fr {
 
             this.__assign_inplace(output, inplace);
             return output;
+        }
+
+        replace_column(columnName: string, fn: (value: CellValue, index?: number) => CellValue, inplace:boolean = false):DataFrame{
+            this.__check_membership(columnName);
+            let corrected_vals = this.get_column(columnName).map((v, i) => fn(v,i))
+            return this.set_column(columnName,corrected_vals,inplace);
+        }
+
+        has_column(columnName:string):boolean{
+            return this.__headers.has(columnName);
         }
 
         to_array(headers: boolean = true): CellValue[][] {
@@ -388,7 +436,7 @@ namespace fr {
             ];
 
             // Convert back to array-of-arrays for constructor: [columns, ...rows]
-            const dataAsMatrix: (CellValue | null)[][] = [
+            const dataAsMatrix: (CellValue)[][] = [
                 columns,
                 ...newData.map(row => columns.map(col => row[col])),
             ];
@@ -426,7 +474,7 @@ namespace fr {
             function alignRow(row: Row, columns: string[]): Row {
                 const aligned: Row = {};
                 for (const col of columns) {
-                    aligned[col] = row[col] !== undefined ? row[col] : null;
+                    aligned[col] = row[col] !== undefined ? row[col] : "";
                 }
                 return aligned;
             }
@@ -444,7 +492,7 @@ namespace fr {
             }
 
             // Build array-of-arrays for DataFrame constructor
-            const dataMatrix: (CellValue | null)[][] = [
+            const dataMatrix: (CellValue)[][] = [
                 columnSet,
                 ...allRows.map(row => columnSet.map(col => row[col]))
             ];
@@ -638,8 +686,8 @@ namespace fr {
             return this.columns.filter(col => this.dtypes[col] === "number");
         }
 
-        describe(): DataFrame {
-            const numericCols = this.getNumericColumns();
+        describe(...columns:string[]): DataFrame {
+            const numericCols = columns.length > 0 ? columns: this.getNumericColumns();
 
             const stats = [
                 "Count",
@@ -699,79 +747,70 @@ namespace fr {
             ]);
         }
 
+        
+        /**
+     * Groups the DataFrame by one or more key columns and applies aggregations to specified value columns.
+     *
+     * @param group_keys - Column(s) to group by.
+     * @param aggregations - An object mapping each value column to one or more aggregation operations.
+     *
+     * Supported operations: "sum", "mean", "count", "min", "max", "std_dev"
+     *
+     * @returns A new DataFrame with aggregated results.
+     */
         groupBy(
             group_keys: string[] | string,
-            valueCols: string[] | "all",
-            aggFuncs: ("sum" | "mean" | "count" | "min" | "max" | "std_dev")[] | ("sum" | "mean" | "count" | "min" | "max" | "std_dev")
+            aggregations: { [col: string]: Operation | Operation[] }
         ): DataFrame {
-            let keys: string[];
-            if (typeof (group_keys) == "string") {
-                keys = [group_keys]
-            }
-            else {
-                keys = group_keys;
-            }
+            type Operation = "sum" | "mean" | "count" | "min" | "max" | "std_dev";
 
+            const keys: string[] = typeof group_keys === "string" ? [group_keys] : group_keys;
             keys.forEach(key => this.__check_membership(key));
             keys.forEach(key => column_violates_separator(key));
 
-            let valueColumns: string[];
-            if (typeof (valueCols) == "string") {
-                valueColumns = this.getNumericColumns();
-                // Filter out any columns that are in the keys list
-                valueColumns = valueColumns.filter(col => !keys.includes(col));
-            }
-            else {
-                valueColumns = valueCols;
-            }
+            const valueColumns: string[] = [];
+            const aggFunctions: Operation[] = [];
 
-            valueColumns.forEach(col => this.__check_membership(col));
+            for (const col in aggregations) {
+                this.__check_membership(col);
 
-            // If only one aggFunc is provided, apply it to all valueColumns
-            if (typeof (aggFuncs) == "string") {
-                aggFuncs = new Array(valueColumns.length).fill(aggFuncs);
-            }
-            else if (aggFuncs.length === 1) {
-                aggFuncs = new Array(valueColumns.length).fill(aggFuncs[0]);
-            }
+                let operations = aggregations[col];
+                let ops: Operation[];
 
+                if (typeof(operations) == "string"){
+                    ops=[operations]
+                }
+                else{
+                    ops = operations;
+                }
 
-            if (aggFuncs.length !== valueColumns.length) {
-                throw new Error(
-                    `Number of value columns (${valueColumns.length}) must match number of aggFuncs (${aggFuncs.length}), or only one aggFunc should be provided.`
-                );
+                for (const op of ops) {
+                    valueColumns.push(col);
+                    aggFunctions.push(op);
+                }
             }
 
             const grouped: { [groupKey: string]: Row[] } = {};
-
-            for (let row of this.values) {
+            for (const row of this.values) {
                 const groupKey = keys.map(k => row[k]).join(SEPARATOR);
-                if (!grouped[groupKey]) {
-                    grouped[groupKey] = [];
-                }
+                if (!grouped[groupKey]) grouped[groupKey] = [];
                 grouped[groupKey].push(row);
             }
 
-            const aggregatedRows: CellValue[][] = [];
             const resultHeaders: string[] = [...keys];
-
-            // Build output headers
             valueColumns.forEach((col, idx) => {
-                resultHeaders.push(`${col}_${aggFuncs[idx]}`);
+                resultHeaders.push(`${col}_${aggFunctions[idx]}`);
             });
 
-            for (let groupKey in grouped) {
-                const rows = grouped[groupKey];
-                const groupDF = new DataFrame([
-                    this.columns,
-                    ...rows.map(r => this.columns.map(col => r[col])),
-                ]);
+            const resultRows: CellValue[][] = [];
 
+            for (const groupKey in grouped) {
+                const groupDF = new DataFrame([this.columns, ...grouped[groupKey].map(row => this.columns.map(col => row[col]))]);
                 const keyParts = groupKey.split(SEPARATOR);
-                const aggregatedRow: CellValue[] = [...keyParts];
+                const resultRow: CellValue[] = [...keyParts];
 
                 valueColumns.forEach((col, idx) => {
-                    const func = aggFuncs[idx];
+                    const func = aggFunctions[idx];
                     let value: number;
 
                     switch (func) {
@@ -793,16 +832,20 @@ namespace fr {
                         case "std_dev":
                             value = groupDF.std_dev(col);
                             break;
+                        default:
+                            throw new Error(`Unsupported operation: ${func}`);
                     }
 
-                    aggregatedRow.push(value);
+                    resultRow.push(value);
                 });
 
-                aggregatedRows.push(aggregatedRow);
+                resultRows.push(resultRow);
             }
 
-            return new DataFrame([resultHeaders, ...aggregatedRows]);
+            return new DataFrame([resultHeaders, ...resultRows]);
         }
+
+
 
         query(condition: (row: Row) => boolean): DataFrame {
             // Filter rows based on the provided condition function
@@ -935,7 +978,7 @@ namespace fr {
             // Rebuild the data array for the new merged DataFrame
             const dataArray = [
                 mergedColumns,
-                ...mergedRows.map(row => mergedColumns.map(col => row[col] || null)) // Handle any missing values
+                ...mergedRows.map(row => mergedColumns.map(col => row[col] || "")) // Handle any missing values
             ];
 
             return new DataFrame(dataArray);
@@ -966,6 +1009,24 @@ namespace fr {
             return output
         }
 
+        /**
+         * Adds a new column filled with the same Excel formula across all rows.
+         * This is useful for injecting dynamic calculations like dates, text parsing, or math operations,
+         * and is especially helpful when used before calling `.hardcode_formulas()` to evaluate them.
+         *
+         * **Important:** Formulas must use **structured table references** (e.g., `[@ColumnName]`),
+         * not standard A1 cell references. For example:
+         * 
+         * - `=YEAR([@Date])`
+         * - `=CONCATENATE([@First Name], " ", [@Last Name])`
+         * - `=IF([@Bonus] > 1000, "Yes", "No")`
+         *
+         * @param columnName - Name of the new column to be added.
+         * @param formula - Excel-style formula string (starting with `=`) using structured references.
+         * @param inplace - If true, modifies the current DataFrame. Otherwise, returns a new one. Default is false.
+         * 
+         * @returns The updated DataFrame (new or modified in-place).
+         */
         add_formula_column(columnName: string, formula: string, inplace: boolean = false): DataFrame {
             /* Append a table-style formula column
             Example: [@Col1] + [@Col2]
@@ -1148,9 +1209,9 @@ namespace fr {
             return this.melt(newColumnName, newValueName, ...melt_cols);
         }
 
-        //General apply function, needs retyping
-        apply<T>(fn: (row: Row) => T): T[] {
-            return this.values.map(row => fn(row));
+        //Apply function that supports FrostRow for .getNumber()
+        apply<T>(fn: (row: FrostRow) => T): T[] {
+            return this.values.map(row => fn(toFrostRow(row)));
         }
 
         //Hidden typed apply function
@@ -1289,7 +1350,7 @@ namespace fr {
             console.log([headerRow, divider, ...dataRows, "", size_statement].join("\n"));
         }
 
-        validate_key(key: DataFrame, on: [string, string] | string, errors: ("raise" | "return") = "raise"): CellValue[] {
+        validate_key(key: DataFrame, on: [string, string] | string, errors: ("raise" | "return" | "warn") = "raise"): CellValue[] {
             let left_on: string;
             let right_on: string;
 
@@ -1308,10 +1369,16 @@ namespace fr {
 
             let not_in_key = left_values.filter(v => !right_values.has(v));
 
-            if (errors == "raise" && not_in_key.length == 0) {
-                throw new Error(`KeyIncompleteError: The following values were not found in the selected key\n[${not_in_key.join(',')}]`);
+            if (not_in_key.length == 0) {
+                if (errors == 'raise'){
+                    throw new Error(`KeyIncompleteError: The following values were not found in the selected key\n[${not_in_key.join(',')}]`);
+                }
+                else if (errors == "warn"){
+                    console.log(`⚠️  validate_key(): ${not_in_key.length} unmatched value(s) in column "${left_on}" that were not found in key column "${right_on}":\n` +
+                        `   → ${not_in_key.slice(0, 10).join(", ")}${not_in_key.length > 10 ? ", ..." : ""}`);
+                }
             }
-
+            
             return not_in_key
         }
 
@@ -1393,15 +1460,14 @@ namespace fr {
             }
         }
 
-        pivot(index: string, columns: string, values: string, aggFunc: ("sum" | "mean" | "count" | "min" | "max" | "std_dev") = "count", fillNa: CellValue = null) {
+        pivot(index: string, columns: string, values: string, aggFunc: Operation = "count", fillNa: CellValue = null) {
             this.__check_membership(index);
             this.__check_membership(columns);
             this.__check_membership(values);
 
             let grouped = this.groupBy(
                 [index, columns],
-                [values],
-                [aggFunc]
+                {[values]: aggFunc}
             );
 
             //Get unique row and columns
@@ -1451,11 +1517,23 @@ namespace fr {
             //If keepHeaders = false, remove headerRows from the output
             return keepHeaders ? output : output.query(row => !isHeaderRow(row));
         }
+
+        snapshot(label: string = ""): DataFrame {
+            if (label) {
+                console.log(`\n🔍 Snapshot: ${label}`);
+            } else {
+                console.log("\n🔍 Snapshot:");
+            }
+
+            this.print();
+            return this;
+        }
     }
 }
 
 function main(workbook: ExcelScript.Workbook) {
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
     // YOUR CODE GOES HERE
-    
+
+    //ADD VALIDATION WARN AND SNAPSHOT DOCUMENTATION AS WELL AS .OSTS
 }
