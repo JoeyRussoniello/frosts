@@ -162,14 +162,20 @@ namespace fr {
         });
     }
 
-    export function toExcelDate(jsDate: Date): number {
+    export function toExcelDate(jsDate: Date, include_time:boolean = true): number {
         const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Excel's "zero" date
         const diffInMs = jsDate.getTime() - excelEpoch.getTime();
         const excelSerialDate = diffInMs / (1000 * 60 * 60 * 24);
-        return excelSerialDate;
+
+        if (include_time){
+            return excelSerialDate
+        }
+        else{
+            return Math.floor(excelSerialDate);
+        }
     }
 
-    export const today = Math.floor(toExcelDate(new Date()));
+    export const today = toExcelDate(new Date(), false);
 
     export function combine_dfs(dfs: DataFrame[], columnSelection: ("inner" | "outer" | "left") = "outer"): DataFrame {
         if (dfs.length == 0) {
@@ -1451,5 +1457,5 @@ namespace fr {
 function main(workbook: ExcelScript.Workbook) {
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
     // YOUR CODE GOES HERE
-
+    
 }
