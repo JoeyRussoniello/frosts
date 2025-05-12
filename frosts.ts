@@ -155,12 +155,21 @@ namespace fr {
 
     export function to_numeric(column: CellValue[]): number[] {
         return column.map(row => {
-            if (row == null){
+            if (row == null) {
                 return NaN
             }
             return parseFloat(row.toString())
         });
     }
+
+    export function toExcelDate(jsDate: Date): number {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Excel's "zero" date
+        const diffInMs = jsDate.getTime() - excelEpoch.getTime();
+        const excelSerialDate = diffInMs / (1000 * 60 * 60 * 24);
+        return excelSerialDate;
+    }
+
+    export const today = Math.floor(toExcelDate(new Date()));
 
     export function combine_dfs(dfs: DataFrame[], columnSelection: ("inner" | "outer" | "left") = "outer"): DataFrame {
         if (dfs.length == 0) {
@@ -196,23 +205,23 @@ namespace fr {
     export function product(nums: number[]): number {
         return nums.reduce((acc, x) => acc * x, 1);
     }
-    
+
     export type BooleanPredicate = (v: CellValue) => boolean;
 
     export const predicates = {
         is_blank: (v: CellValue) => v == "",
         is_nan: (v: CellValue) => isNaN(Number(v)),
-        equal: (target: CellValue): BooleanPredicate=> (v) => v == target,
+        equal: (target: CellValue): BooleanPredicate => (v) => v == target,
         includes: (substring: string): BooleanPredicate => (v) => v.toString().includes(substring),
-        starts_with: (target: string): BooleanPredicate =>  (v) => {
-            let v_string = v.toString();
-            if (v_string.length < target.length){return false}
-            return v_string.slice(0, target.length) == target;
+        starts_with: (target: string): BooleanPredicate => (v) => {
+            let value = v != null ? v.toString() : "";
+            if (value.length < target.length){return false}
+            return value.slice(0,target.length) == target;
         },
-        ends_with: (target:string): BooleanPredicate => (v) => {
-            let v_string = v.toString();
-            if (v_string.length < target.length){return false}
-            return v_string.slice(v_string.length - target.length) == target;
+        ends_with: (target: string): BooleanPredicate => (v) => {
+            let value = v != null ? v.toString() : "";
+            if (value.length < target.length) { return false }
+            return value.slice(value.length - target.length) == target;
         }
     };
 
@@ -267,6 +276,7 @@ namespace fr {
             });
         }
 
+        is_empty(): boolean { return this.values.length == 0 }
         private __assign_inplace(other: DataFrame, inplace: boolean) {
             if (inplace) {
                 this.__assign_properties(...other.__extract_properties());
@@ -800,19 +810,28 @@ namespace fr {
             return new DataFrame(resultData);
         }
 
-        isin(column: string, values: Set<CellValue>): DataFrame {
+        private __set_membership(column: string, values: Set<CellValue>, isin: boolean): DataFrame {
             this.__check_membership(column); // make sure column exists
 
             // Filter rows where the column's value is in the Set
-            const filteredRows = this.values.filter(row => values.has(row[column]));
+            let filtered_rows: Row[] = [];
+            if (isin) { filtered_rows = this.values.filter(row => values.has(row[column])); }
+            else { filtered_rows = this.values.filter(row => !values.has(row[column])) }
 
             // Rebuild data array for new DataFrame
             const dataArray = [
                 this.columns,
-                ...filteredRows.map(row => this.columns.map(col => row[col]))
+                ...filtered_rows.map(row => this.columns.map(col => row[col]))
             ];
 
             return new DataFrame(dataArray);
+        }
+
+        is_in(column: string, values: Set<CellValue>): DataFrame {
+            return this.__set_membership(column, values, true);
+        }
+        isnt_in(column: string, values: Set<CellValue>): DataFrame {
+            return this.__set_membership(column, values, false);
         }
 
         sortBy(columns: string[], ascending: boolean[] = [], inplace: boolean = false): DataFrame {
@@ -1264,7 +1283,7 @@ namespace fr {
             console.log([headerRow, divider, ...dataRows, "", size_statement].join("\n"));
         }
 
-        validate_key(key: DataFrame, on: [string, string] | string, errors: ("raise" | "return") = "raise"): CellValue[]{
+        validate_key(key: DataFrame, on: [string, string] | string, errors: ("raise" | "return") = "raise"): CellValue[] {
             let left_on: string;
             let right_on: string;
 
@@ -1329,7 +1348,14 @@ namespace fr {
 
         private __append_to_table(table: ExcelScript.Table) {
             let rng = table.getRange();
-            let first_cell = rng.getLastRow().getCell(0, 0).getOffsetRange(1, 0);
+
+            let first_cell: ExcelScript.Range = rng.getLastRow().getCell(0, 0).getOffsetRange(1, 0);
+
+            let vals = rng.getValues();
+            let last_row = vals[vals.length - 1];
+            if (rng.getValues().length == 2 && last_row.every(v => v == "")) {
+                first_cell = first_cell.getOffsetRange(-1, 0);
+            }
 
             //Mapping onto new table logic
             let headers = table.getHeaderRowRange().getValues()[0] as string[];
@@ -1406,18 +1432,18 @@ namespace fr {
          * @param keepHeaders - Boolean on whether you'd like to keep the rows flagged as headers in the output DataFrame.
          * @returns A new DataFrame with the header values encoded in the new column
          */
-        encode_headers(columnName:string, isHeaderRow: (row: Row)=> boolean, extractValue: (row:Row)=>CellValue, keepHeaders:boolean = false):DataFrame{
-            let current_header:CellValue = "";
+        encode_headers(columnName: string, isHeaderRow: (row: Row) => boolean, extractValue: (row: Row) => CellValue, keepHeaders: boolean = false): DataFrame {
+            let current_header: CellValue = "";
             let series = this.values.map(row => {
-                if (isHeaderRow(row)){
+                if (isHeaderRow(row)) {
                     current_header = extractValue(row);
                 }
                 return current_header;
             })
 
-            let output = this.set_column(columnName,series,false);
+            let output = this.set_column(columnName, series, false);
             //If keepHeaders = false, remove headerRows from the output
-            return keepHeaders ? output : output.query(row => !isHeaderRow(row)); 
+            return keepHeaders ? output : output.query(row => !isHeaderRow(row));
         }
     }
 }
@@ -1425,5 +1451,5 @@ namespace fr {
 function main(workbook: ExcelScript.Workbook) {
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
     // YOUR CODE GOES HERE
-    
+
 }
