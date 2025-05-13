@@ -38,7 +38,7 @@ function main(workbook: ExcelScript.Workbook) {
 `//Note how an empty row at the end is permissble (but not necessary)
 
 
-    //Process the csv data
+    //Process the csv data, coercing malformed rows
     let df = fr.read_csv(csv_content,"coerce");
 
     //First, we'll write the DataFrame to ExcelWorksheet as is
@@ -50,7 +50,7 @@ function main(workbook: ExcelScript.Workbook) {
         .to_worksheet(high_salaries,'o')
     
     //We can also create a custom column for "Income Tax", that's 30% of income
-    let income_tax = df.apply_numeric(row => row["Income"] * 0.3)
+    let income_tax = df.apply(row => row.get_number("Income") * 0.3);
     df
         .add_column("Income Tax",income_tax)
         .to_worksheet(w_income_tax,'o')
@@ -71,8 +71,8 @@ function main(workbook: ExcelScript.Workbook) {
     df
         .groupBy(
             ['City',"Department"], //Group By City and Department
-            ['Salary',"Salary"],
-            ['mean','count']) //Calculate mean for salary and count for salary
+            {"Salary":['mean','count']} //Calculate average salary and number of employees
+        ) 
         .rename({
             "Salary_mean":"Average Salary",
             "Salary_count":"Num Employees"
