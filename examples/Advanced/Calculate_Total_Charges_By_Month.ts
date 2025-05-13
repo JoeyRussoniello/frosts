@@ -1,6 +1,6 @@
 //Assume frosts namespace is already imported
 
-function main(workbook: ExcelScript.Workbook) {
+function main(workbook: ExcelScript.Workbook):string{
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
   
     // Load the reservation data from the "Reservations" sheet
@@ -24,22 +24,31 @@ function main(workbook: ExcelScript.Workbook) {
     for (let [row, index] of with_rate.iterrows()) {
       dfs.push(unroll_row(row));
     }
-    //Alternatively could have used with_rate.values.map(row => unroll_row) for speed increase 
+    //Alternatively could have used with_rate.values.map(row => unroll_row(row)) for speed increase,
+    //but the above option is a lot more readable!
 
     // Combine the unrolled rows into one DataFrame
     let combined = fr.combine_dfs(dfs);
 
     // Summarize performance by property and month
-    combined
+    let output = combined
       .add_formula_column("Month", "=DATE(YEAR([@Date]),MONTH([@Date]),1)")  // Excel formula to extract month
       .hardcode_formulas(workbook, true)                                     // Evaluate formulas
-      .groupBy(["Property Name", "Month"], ["Charges", "Charges"], ["sum", "count"]) //Aggregate
+      .groupBy(
+        ["Property Name", "Month"], 
+        {"Charges":['sum','count']} //Sum and count charges
+        ) 
       .rename({ //Rename columns for clarity
         "Charges_sum": "Revenue", 
         "Charges_count": "Room Nights"
         })
       .sortBy(["Property Name", "Month"], [true, true]) //sort ascending for easier reading
-      .to_worksheet(workbook.addWorksheet("Performance by Month")) //Add  a worksheet and write
+    
+    //Write output to a worksheet
+    output.to_worksheet(workbook.getWorksheet("Performance by Month"));
+
+    //And also export to JSON for Power Automate ETL pipelines
+    return output.to_json();
 }
 
   // Unroll one reservation row into 1 row per room night

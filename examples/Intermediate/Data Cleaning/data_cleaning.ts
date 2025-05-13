@@ -7,20 +7,16 @@ function main(workbook: ExcelScript.Workbook) {
     let cleaned = workbook.getWorksheet("Cleaned Data");
     let df = fr.read_sheet(sheet);
 
-    function fix_dollars(df:fr.DataFrame, col:string){
-        //Split the dollar signs
-        
-        let after_dols = df.apply_string(row => String(row[col]).split("$")[1])
-        
-        //Coerce to numeric using frosts
-        let numeric_dols = fr.to_numeric(after_dols);
-
-        //Assign over the previous col in place
-        df.set_column(col,numeric_dols,true);
+    function fix_dollars(df: fr.DataFrame, col: string) {
+        df.replace_column(
+            col, 
+            v => Number(v.toString().split("$")[1]), //Split the dollar signs and change to number 
+            true //in-place
+        );
     }
 
-    let problem_cols = ['Jan',"Feb","Mar","Apr","May","Jun"] //Total gets dropped in cleaning anyways
-    problem_cols.forEach(col => fix_dollars(df,col));
+    let problem_cols = ['Jan', "Feb", "Mar", "Apr", "May", "Jun"] //Total gets dropped in cleaning anyways
+    problem_cols.forEach(col => fix_dollars(df, col));
 
     df
         .drop("Total")
@@ -33,7 +29,7 @@ function main(workbook: ExcelScript.Workbook) {
         .melt_except(
             "Month", //Unpivot headers into a "Month" column
             "Sales", //Unpivot values into a "Sales" column
-            "Region","Product" //Keep Region and Product as identifier columns
+            "Region", "Product" //Keep Region and Product as identifier columns
         )
-        .to_worksheet(cleaned,"o")
+        .to_worksheet(cleaned, "o")
 }

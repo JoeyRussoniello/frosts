@@ -1534,6 +1534,5 @@ namespace fr {
 function main(workbook: ExcelScript.Workbook) {
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
     // YOUR CODE GOES HERE
-
-    //ADD VALIDATION WARN AND SNAPSHOT DOCUMENTATION AS WELL AS .OSTS
+    
 }

@@ -12,6 +12,7 @@
     7. [`.print()`](#printn_rows-number--5-void)
     8. [`.unique()`](#uniquecolumns-string-dataframe)
     9. [`.is_empty()`](#is_emptyboolean)
+    10. [`.has_column()`]()
 2. [🗂️ Column Management](#️-column-management)
     1. [`.add_column()`](#add_columncolumnname-string-values-stringnumberboolean-inplaceboolean--falsedataframe)
     2. [`.drop()`](#dropkeysstringdataframe)
@@ -30,7 +31,7 @@
 
 ## ⚙️ DataFrame Utilities
 
-### `.copy()`
+## `.copy()`
 
 Returns a deep copy of the DataFrame, any modifications made on the new `DataFrame` will not affect the original
 
@@ -55,7 +56,7 @@ console.log(updated.columns);
 
 ---
 
-### `.shape(): [number, number]`
+## `.shape(): [number, number]`
 
 Returns the size of the dataframe's *values* as `[num_rows, num_columns]`
 
@@ -73,7 +74,7 @@ console.log(df.shape());
 
 ---
 
-### `.sortBy(columns: string[], ascending: boolean[] = [], inplace:boolean = False): DataFrame`
+## `.sortBy(columns: string[], ascending: boolean[] = [], inplace:boolean = False): DataFrame`
 
 Returns a new DataFrame sorted by one or more columns.
 
@@ -108,7 +109,7 @@ console.log(sorted.values);
 
 ---
 
-### `drop_rows(...rows: number[]): DataFrame`
+## `drop_rows(...rows: number[]): DataFrame`
 
 Removes specific rows by index from the DataFrame.
 
@@ -153,7 +154,7 @@ Output:
 
 ---
 
-### `head(n_rows: number = 10): DataFrame`
+## `head(n_rows: number = 10): DataFrame`
 
 Returns the first n_rows of the DataFrame.
 
@@ -182,7 +183,7 @@ Output:
 
 ---
 
-### `tail(n_rows: number = 10): DataFrame`
+## `tail(n_rows: number = 10): DataFrame`
 
 Returns the last n_rows of the DataFrame.
 
@@ -211,7 +212,7 @@ Output:
 
 ---
 
-### `print(n_rows: number = 5): void`
+## `print(n_rows: number = 5): void`
 
 Prints a formatted preview of the `DataFrame` to the console.
 
@@ -242,6 +243,36 @@ df.print(2);
 | Fay    | 76    |
 | Gina   | 81    |
 */
+```
+
+---
+
+## `snapshot(label?: string)`
+
+Prints a labeled preview of the `DataFrame` and returns the DataFrame itself.
+
+- `label`: *(optional)* A string label shown above the preview (e.g., `"Before Merge"`)
+- Internally calls `.print()` to display the top and bottom rows
+- Returns `this`, making it chainable for debugging during method chains
+
+```ts
+df
+  .drop("SSN")
+  .snapshot("After dropping SSN")
+  .filter(row => row.get_number("Score") > 80); //Allows method chaining after calling .snapshot() NOT possible with .print()
+```
+
+**Output**:
+
+```ts
+🔍 Snapshot: After dropping SSN
+| Name   | Score |
+|--------|-------|
+| Alice  | 90    |
+| Bob    | 78    |
+| ...    | ...   |
+| Fay    | 76    |
+| Gina   | 81    |
 ```
 
 ---
@@ -289,6 +320,23 @@ Output:
 Returns **true** if the DataFrame has no values, and **false** if there is a single `fr.Row` present in the dataframe.
 
 Especially useful after filtering or before exporting a DataFrame to ensure that it is has values before continuing with data processing/aggregation.
+
+---
+
+## .has_column(columnName:string):boolean
+
+**Checks whether `columnName` exists in the DataFrame. Useful for conditional logic before perfoming operaitons on columns.
+
+```ts
+let df = new fr.DataFrame([
+  ["Name", "Age"],
+  ["Alice", 25],
+  ["Bob", 30]
+]);
+
+df.has_column("Age");      // true
+df.has_column("Address");  // false
+```
 
 ---
 
@@ -626,32 +674,51 @@ Row 1: { Name: "Bob", Age: 32 }
 
 ### `.apply<T>(fn: (row: Row) => T): T[]`
 
-Applies a custom function to each row of the DataFrame and returns an array of results.
+Applies a **custom function** to each row of the DataFrame using typed access.
+This method allows you to iterate over all rows and return a list of computed values.
 
-- `fn`: A callback that receives a single Row (i.e., an object mapping column names to values)
-- Returns a new array of the function outputs (one per row)
+It uses the `FrostRow` interface to provide type-safe access to cell values.
 
-> Note: Since row values may be of mixed type (string | number | boolean), explicit typecasting is often needed inside the callback. If you are performing numerical operations and want to avoid this
+Arguments
+
+- `fn ((row: FrostRow) => T)` — A function that receives each row as a FrostRow object and returns a transformed value of any type T.
+
+The FrostRow API includes:
+
+- `.get(key)` — Return the raw value without type Coercion.
+- `.get_number(key)` — Return a number (throws if conversion fails)
+- `.get_string(key)` — Return a string
+- `.get_boolean(key)` — Return a boolean
+- `.keys()` — Return the list of column names
+- `.raw` — Access the full underlying row as a plain object
+
+### Example 1: Basic Calculation
 
 ```ts
-const df = new frosts.DataFrame([
-  ["Name", "Score"],
-  ["Alice", 90],
-  ["Bob", 78]
+let df = fr.read([
+  ["Region", "Sales"],
+  ["North", 1000],
+  ["South", 1500]
 ]);
 
-// Extract names
-const names = df.apply(row => String(row["Name"]).toUppercase());
-console.log(names); // ["ALICE", "BOB"]
+let doubled = df.apply(row => row.get_number("Sales") * 2);
+console.log(doubled); // [2000, 3000]
+```
 
-// Double the scores
-const doubled = df.apply(row => Number(row["Score"]) * 2);
-console.log(doubled); // [180, 156]
+### Example 2: Custom String Labeling
+
+```ts
+let tags = df.apply(row => {
+  const region = row.get_string("Region");
+  const sales = row.get_number("Sales");
+  return `${region}: $${sales}`;
+});
+console.log(tags); // ["North: $1000", "South: $1500"]
 ```
 
 ---
 
-### [`df.apply_numeric(fn: (row) => number): number[]`]
+### `df.apply_numeric(fn: (row) => number): number[]`
 
 Applies a function to each row after **coercing all values to numbers**, without the need for explicit typecasting.
 
@@ -757,6 +824,7 @@ updated.print();
 └────────┴──────┘
 
 ---
+
 Now that you've learned how to manipulate and manage your data with basic operations like adding, renaming, and sorting columns, it's time to explore how to filter your DataFrame to focus on specific rows or subsets.
 
 In the next section, you'll discover how to apply conditions and criteria to select only the data you need, enabling more powerful data analysis and transformation.

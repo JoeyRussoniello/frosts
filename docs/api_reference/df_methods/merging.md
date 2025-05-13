@@ -126,7 +126,7 @@ This type of join is especially useful when working with time series data or log
 
 ---
 
-### `.validate_key(key: DataFrame, on: [string, string] | string, errors: "raise" | "return" = "raise")`
+### `.validate_key(key: DataFrame, on: [string, string] | string, errors: "raise" | "return" = "raise"):CellValue[]`
 
 Checks whether all join key values in the current DataFrame exist in the corresponding column of another DataFrame.
 
@@ -136,13 +136,14 @@ Checks whether all join key values in the current DataFrame exist in the corresp
 - `on`: Column(s) to match.
   - If a `string`, the same column name is used in both DataFrames.
   - If a tuple `[leftCol, rightCol]`, matches `this[leftCol]` to `key[rightCol]`.
-- errors: What to do if mismatches are found.
+- `errors`: What to do if mismatches are found.
   - "raise" (default): Throws an error with all unmatched values.
   - "return": Returns an array of unmatched values (allows for graceful handling).
+  - "warn": Similarly returns the array of unmatched values, but will log a warning message if there are any unmatched keys
 
 #### Returns
 
-- If `errors = "return"`: An array of missing values.
+- If `errors = "return" or "warn`: An array of missing values.
 - If `errors = "raise"`: Throws an error and stops execution if mismatches are found.
 - If all keys are valid: Returns `void`.
 
