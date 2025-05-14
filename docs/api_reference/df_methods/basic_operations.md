@@ -4,6 +4,8 @@ nav_order: 1
 parent: The fr.DataFrame
 --- 
 
+<a href="#table-of-contents" style="position: fixed; bottom: 1rem; right: 1rem; background: #235284; color: white; padding: 0.5rem; border-radius: 4px; text-decoration: none;">⬆ Return to Table of Contents</a>
+
 These are the core methods you’ll use to inspect, manipulate, and reshape your fr.DataFrame. From selecting rows and columns to adding formulas, sorting, and performing row-wise math — this page covers all the foundational tools you’ll need to start working with structured data in Frosts.
 
 ## Table of Contents
@@ -296,7 +298,7 @@ Output:
 
 ---
 
-### .is_empty():boolean
+### `.is_empty():boolean`
 
 Returns **true** if the DataFrame has no values, and **false** if there is a single `fr.Row` present in the dataframe.
 
@@ -307,7 +309,7 @@ Returns **true** if the DataFrame has no values, and **false** if there is a sin
 
 ---
 
-### .has_column(columnName:string):boolean
+### `.has_column(columnName:string):boolean`
 
 **Checks whether `columnName` exists in the DataFrame. Useful for conditional logic, especially when receiving dynamic inputs from PowerAutomate.
 
