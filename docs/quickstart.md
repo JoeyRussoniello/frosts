@@ -6,6 +6,11 @@ We’ll use a sample file called [Employees.xlsx](https://github.com/JoeyRussoni
 
 ---
 
+* Table of Contents
+{:toc}
+
+---
+
 ## ⏰ Step 0: Setup
 
 To follow along, download and open [Employees.xlsx](https://github.com/JoeyRussoniello/frosts/blob/main/examples/Introduction/Employees.xlsx?raw=true). Then open the **Automate** tab and copy the [frosts.ts code](https://github.com/JoeyRussoniello/frosts/blob/main/frosts.ts) into the coding pane.
