@@ -9,7 +9,6 @@ Now that you’ve learned how to aggregate and summarize data within a DataFrame
 frosts provides two powerful methods for combining DataFrames: `.merge()` for key-based joins, and `.concat()` for stacking data row-wise.
 
 ## Table of Contents
-
 {:toc}
 
 ### `.merge(other: DataFrame, on: string[], how: "inner" | "left" | "outer" = "inner")`

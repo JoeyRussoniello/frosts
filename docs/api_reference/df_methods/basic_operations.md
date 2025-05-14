@@ -4,8 +4,7 @@ nav_order: 1
 parent: The fr.DataFrame
 --- 
 
-## Table of Contents
-
+## Table
 {:toc}
 
 ## ⚙️ DataFrame Utilities

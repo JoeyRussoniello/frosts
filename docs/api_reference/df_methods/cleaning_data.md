@@ -7,7 +7,6 @@ parent: The fr.DataFrame
 Many real-world Excel files contain messy, incomplete, or inconsistent values. To simplify cleaning tasks, `frosts` provides a **predicates** submodule for common checks like blank cells or matching values, as well as built in **DataFrame methods** for common cleaning patterns.
 
 ## Table Of Contents
-
 {:toc}
 
 ## The `predicates` submodule, Boolean Predicates, and filtering

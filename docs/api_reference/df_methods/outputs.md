@@ -7,7 +7,6 @@ parent: The fr.DataFrame
 Once your data is prepared and processed, you'll often want to save it for later use or share it with other systems. Frosts makes it easy to export your DataFrames to common formats like Excel, CSV, and JSON, and just as simple to load them back in.
 
 ## Table of Contents
-
 {:toc}
 
 ## to_worksheet(worksheet:ExcelScript.Worksheet, method: ("o"|"a") = "o")
