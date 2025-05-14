@@ -1,3 +1,7 @@
+#Include the _includes directory for recycled HTML elements
+include:
+  - _includes
+
 # Use Just the Docs theme (much more structured than Midnight)
 remote_theme: just-the-docs/just-the-docs
 
@@ -11,6 +15,8 @@ just_the_docs:
     View on GitHub: https://github.com/JoeyRussoniello/frosts
   show_downloads: true
   search_enabled: true
+  footer_content: ""
+  footer_custom: true #Enable the custom footer HTML
 
 # Optional: Clean URLs
 permalink: pretty
