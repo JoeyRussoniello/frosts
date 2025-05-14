@@ -12,7 +12,7 @@
 
 ## 📚 Documentation
 
-- [Getting Started](getting-started.md)
+- [Getting Started](quickstart.md)
 - [Reading Data](api_reference/other_functions.md)
 - [Cleaning Data](api_reference/cleaning_data.md)
 - [DataFrame](api_reference/dataframe_index.md)
