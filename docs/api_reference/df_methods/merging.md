@@ -10,8 +10,17 @@ frosts provides two powerful methods for combining DataFrames: `.merge()` for ke
 
 ---
 
-- Table of Contents
+<!-- Frosts Collapsible TOC Block -->
+## Table of Contents
+
+<details open markdown="block">
+  <summary>
+    Click to Expand
+  </summary>
+  {: .text-delta }
+1. TOC
 {:toc}
+</details>
 
 ---
 

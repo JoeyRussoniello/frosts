@@ -6,12 +6,19 @@ parent: The fr.DataFrame
 
 Many real-world Excel files contain messy, incomplete, or inconsistent values. To simplify cleaning tasks, `frosts` provides a **predicates** submodule for common checks like blank cells or matching values, as well as built in **DataFrame methods** for common cleaning patterns.
 
-## Table of Contents
-
 ---
 
-- Table of Contents
+<!-- Frosts Collapsible TOC Block -->
+## Table of Contents
+
+<details open markdown="block">
+  <summary>
+    Click to Expand
+  </summary>
+  {: .text-delta }
+1. TOC
 {:toc}
+</details>
 
 ---
 

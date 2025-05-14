@@ -6,12 +6,19 @@ parent: The fr.DataFrame
 
 Once your data is prepared and processed, you'll often want to save it for later use or share it with other systems. Frosts makes it easy to export your DataFrames to common formats like Excel, CSV, and JSON, and just as simple to load them back in.
 
-## Table of Contents
-
 ---
 
-- Table of Contents
+<!-- Frosts Collapsible TOC Block -->
+## Table of Contents
+
+<details open markdown="block">
+  <summary>
+    Click to Expand
+  </summary>
+  {: .text-delta }
+1. TOC
 {:toc}
+</details>
 
 ---
 

@@ -6,12 +6,19 @@ parent: The fr.DataFrame
 
 Aggregation methods allow you to summarize and combine your data in meaningful ways, providing insights like sums, averages, counts, and more. Whether you're interested in grouping data by categories or calculating overall statistics, aggregation gives you the tools to analyze data at a higher level.
 
-## Table of Contents
-
 ---
 
-- Table of Contents
+<!-- Frosts Collapsible TOC Block -->
+## Table of Contents
+
+<details open markdown="block">
+  <summary>
+    Click to Expand
+  </summary>
+  {: .text-delta }
+1. TOC
 {:toc}
+</details>
 
 ---
 

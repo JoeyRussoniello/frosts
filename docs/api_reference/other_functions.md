@@ -12,8 +12,17 @@ The functions in this section allow frosts to read from Excel, CSV, and JSON doc
 
 ---
 
-- Table of Contents
+<!-- Frosts Collapsible TOC Block -->
+## Table of Contents
+
+<details open markdown="block">
+  <summary>
+    Click to Expand
+  </summary>
+  {: .text-delta }
+1. TOC
 {:toc}
+</details>
 
 ---
 

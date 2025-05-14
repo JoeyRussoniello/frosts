@@ -6,12 +6,19 @@ parent: The fr.DataFrame
 
 Frosts DataFrames offer various filtering methods, each designed for specific use cases to filter data on a given condition.
 
-## Table of Contents
-
 ---
 
-- Table of Contents
+<!-- Frosts Collapsible TOC Block -->
+## Table of Contents
+
+<details open markdown="block">
+  <summary>
+    Click to Expand
+  </summary>
+  {: .text-delta }
+1. TOC
 {:toc}
+</details>
 
 ---
 
