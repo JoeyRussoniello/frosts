@@ -13,7 +13,7 @@ Many real-world Excel files contain messy, incomplete, or inconsistent values. T
 
 <details open markdown="block">
   <summary>
-    Click to Expand
+    Click to Expand/Collapse
   </summary>
   {: .text-delta }
 1. TOC

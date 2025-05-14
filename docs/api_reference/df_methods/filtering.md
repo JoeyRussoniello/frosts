@@ -13,7 +13,7 @@ Frosts DataFrames offer various filtering methods, each designed for specific us
 
 <details open markdown="block">
   <summary>
-    Click to Expand
+    Click to Expand/Collapse
   </summary>
   {: .text-delta }
 1. TOC

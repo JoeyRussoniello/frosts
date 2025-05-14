@@ -13,7 +13,7 @@ Once your data is prepared and processed, you'll often want to save it for later
 
 <details open markdown="block">
   <summary>
-    Click to Expand
+    Click to Expand/Collapse
   </summary>
   {: .text-delta }
 1. TOC

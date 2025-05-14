@@ -8,8 +8,6 @@ This section documents the `fr` namespace — a collection of **import helpers**
 
 The functions in this section allow frosts to read from Excel, CSV, and JSON documents, as well as perform optimized mathematical operations with minimal code.
 
-## Table of Contents
-
 ---
 
 <!-- Frosts Collapsible TOC Block -->
@@ -17,7 +15,7 @@ The functions in this section allow frosts to read from Excel, CSV, and JSON doc
 
 <details open markdown="block">
   <summary>
-    Click to Expand
+    Click to Expand/Collapse
   </summary>
   {: .text-delta }
 1. TOC

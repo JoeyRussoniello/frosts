@@ -15,7 +15,7 @@ frosts provides two powerful methods for combining DataFrames: `.merge()` for ke
 
 <details open markdown="block">
   <summary>
-    Click to Expand
+    Click to Expand/Collapse
   </summary>
   {: .text-delta }
 1. TOC

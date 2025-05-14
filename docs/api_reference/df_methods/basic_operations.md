@@ -13,7 +13,7 @@ These are the core methods you’ll use to inspect, manipulate, and reshape your
 
 <details open markdown="block">
   <summary>
-    Click to Expand
+    Click to Expand/Collapse
   </summary>
   {: .text-delta }
 1. TOC

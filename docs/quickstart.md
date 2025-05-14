@@ -7,12 +7,19 @@ Welcome to **frosts**, a beginner-friendly data analysis toolkit for Excel using
 
 We’ll use a sample file called [Employees.xlsx](https://github.com/JoeyRussoniello/frosts/blob/main/examples/Introduction/Employees.xlsx?raw=true) to show how to load data, inspect it, clean it, analyze it, and **save your results back to Excel** or send to **Power Automate** using *JSON*.
 
-## Table of Contents
-
 ---
 
-* Table of Contents
+<!-- Frosts Collapsible TOC Block -->
+## Table of Contents
+
+<details open markdown="block">
+  <summary>
+    Click to Expand/Collapse
+  </summary>
+  {: .text-delta }
+1. TOC
 {:toc}
+</details>
 
 ---
 

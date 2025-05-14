@@ -13,7 +13,7 @@ Aggregation methods allow you to summarize and combine your data in meaningful w
 
 <details open markdown="block">
   <summary>
-    Click to Expand
+    Click to Expand/Collapse
   </summary>
   {: .text-delta }
 1. TOC
