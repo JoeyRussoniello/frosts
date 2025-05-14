@@ -172,11 +172,11 @@ filtered.print();
 
 Like `.equal()`, shown above, more predicates can be used with `.filter()`, including:
 
-- `fr.predicates.is_blank`: Checks if a **string** value is blank
-- `fr.predicates.is_nan`: Checks is a **numeric** value is `NaN`
-- `fr.predicates.includes(substring)`: Checks if a column's text includes a substring (Ex: "Region: North" includes "Region")
-- `fr.predicates.starts_with(substring)`: Checks if a column's text starts with a substring.
-- `fr.predicates.ends_with(substring)`: Checks if a column's text ends with a substring
+* `fr.predicates.is_blank`: Checks if a **string** value is blank
+* `fr.predicates.is_nan`: Checks is a **numeric** value is `NaN`
+* `fr.predicates.includes(substring)`: Checks if a column's text includes a substring (Ex: "Region: North" includes "Region")
+* `fr.predicates.starts_with(substring)`: Checks if a column's text starts with a substring.
+* `fr.predicates.ends_with(substring)`: Checks if a column's text ends with a substring
 
 ---
 
@@ -432,21 +432,21 @@ function main(workbook: ExcelScript.Workbook): string{
 
 DataFrames can also be exported:
 
-- `to_array`: Exports as a 2D array for those comfortable with base TypeScript/Office Scripting
-- `to_worksheet(worksheet, "a")`: Appends onto `worksheet` instead of overwriting it.
-- `to_csv`: Exports content as *csv*, *tsv*, or any separated-value format
-- `to_table(table, "o")`: Overwrites an existing table's values, matching its headers
-- `to_table(table, "a")`: Appends ontto an existing table, matching its headers
+* `to_array`: Exports as a 2D array for those comfortable with base TypeScript/Office Scripting
+* `to_worksheet(worksheet, "a")`: Appends onto `worksheet` instead of overwriting it.
+* `to_csv`: Exports content as *csv*, *tsv*, or any separated-value format
+* `to_table(table, "o")`: Overwrites an existing table's values, matching its headers
+* `to_table(table, "a")`: Appends ontto an existing table, matching its headers
 
 ---
 
 ## 🚀 Next Steps
 
-- Read More of the [API Methods](api_reference/df_methods/basic_operations.md) section to get details on how each method works
-- Check out [more examples](https://github.com/JoeyRussoniello/frosts/tree/main/examples) to see real workflows, clever tricks, and progressively harder problems
-  - **Statistical analysis** to determine if a company's departments have a statistically significant gender pay gap using confidence intervals
-  - **Automatic cleanup** of messy, non-tabular, or legacy-formatted data (embedded headers, noisy columns, etc.)
-  - **Full ETL pipelines** entirely within Excel; Extract, transform, and load structured outputs from raw input sheets, csv or json, connecting to PowerAutomate for **FREE**
-- Try Frosts on your own spreadsheets and experiment — the best way to learn is by doing!
+* Read More of the [API Methods](api_reference/df_methods/basic_operations.md) section to get details on how each method works
+* Check out [more examples](https://github.com/JoeyRussoniello/frosts/tree/main/examples) to see real workflows, clever tricks, and progressively harder problems
+  * **Statistical analysis** to determine if a company's departments have a statistically significant gender pay gap using confidence intervals
+  * **Automatic cleanup** of messy, non-tabular, or legacy-formatted data (embedded headers, noisy columns, etc.)
+  * **Full ETL pipelines** entirely within Excel; Extract, transform, and load structured outputs from raw input sheets, csv or json, connecting to PowerAutomate for **FREE**
+* Try Frosts on your own spreadsheets and experiment — the best way to learn is by doing!
 
 You're now ready to start your data analysis and automation journey with Frosts!
