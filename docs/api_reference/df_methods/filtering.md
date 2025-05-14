@@ -6,8 +6,12 @@ parent: The fr.DataFrame
 
 Frosts DataFrames offer various filtering methods, each designed for specific use cases to filter data on a given condition.
 
-## Table of Contents
+---
+
+- Table of Contents
 {:toc}
+
+---
 
 ## Filter Functions
 

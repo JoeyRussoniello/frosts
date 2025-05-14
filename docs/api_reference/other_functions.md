@@ -10,8 +10,7 @@ The functions in this section allow frosts to read from Excel, CSV, and JSON doc
 
 ---
 
-📚 Table of Contents
-
+- Table of Contents
 {:toc}
 
 ---
