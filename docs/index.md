@@ -1,6 +1,7 @@
 ---
 title: Welcome to Frosts
 nav_order: 1
+hide_footer_buttons: true
 ---
 
 ![Frosts Logo](images/frosts_logo.svg)
