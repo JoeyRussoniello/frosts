@@ -21,7 +21,7 @@ Think of Frosts as **pandas for spreadsheets** — designed specifically for Exc
 
 ---
 
-## 🧰 What Can You Do with It?
+## What Can You Do with It?
 
 Here’s a quick guide to what the Frosts module offers:
 
@@ -37,7 +37,7 @@ Here’s a quick guide to what the Frosts module offers:
 
 ---
 
-## 🚀 Quickstart
+## Quickstart
 
 If you're new to coding or Excel scripts, don’t worry — the [15-Minute Quickstart Guide](quickstart.md) will walk you through everything from setup to export.
 
@@ -51,7 +51,7 @@ If you're new to coding or Excel scripts, don’t worry — the [15-Minute Quick
 
 ---
 
-## 📚 Browse the Docs
+## Browse the Docs
 
 - [Quickstart Guide](quickstart.md) – a friendly intro
 - [Reading and Processing Data](api_reference/other_functions.md)
@@ -64,7 +64,7 @@ If you're new to coding or Excel scripts, don’t worry — the [15-Minute Quick
 
 ---
 
-## 🧠 Why Use Frosts?
+## Why Use Frosts?
 
 - ✅ Easier to read than vanilla Office Scripts
 - ✅ Safer and less error-prone than raw Excel logic

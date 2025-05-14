@@ -17,7 +17,7 @@ The functions in this section allow frosts to read from Excel, CSV, and JSON doc
 
 ---
 
-## fr.read_range(range: ExcelScript.Range): DataFrame
+## `fr.read_range(range: ExcelScript.Range): DataFrame`
 
 Reads a specific Excel range and returns it as a DataFrame.
 
@@ -38,7 +38,7 @@ const df = fr.read_range(workbook.getRange("A1:C6"));
 
 ---
 
-## fr.read_sheet(Sheet: ExcelScript.Worksheet): DataFrame
+## `fr.read_sheet(Sheet: ExcelScript.Worksheet): DataFrame`
 
 Reads the *entire* used range of a worksheet and returns it as a `DataFrame`.
 
@@ -64,7 +64,7 @@ const df = fr.read_range(sheet.getUsedRange());
 
 ---
 
-## fr.read_after(Sheet: ExcelScript.Worksheet, n_rows: number, n_cols: number): DataFrame
+## `fr.read_after(Sheet: ExcelScript.Worksheet, n_rows: number, n_cols: number): DataFrame`
 
 Reads the used range after skipping a number of rows and columns, returning the remaining area as a DataFrame.
 
@@ -91,7 +91,7 @@ const df = fr.read_range(offset);
 
 ---
 
-## fr.read_json(json:string):DataFrame
+## `fr.read_json(json:string):DataFrame`
 
 Reads a JSON string and parses it into a DataFrame.
 
@@ -102,7 +102,7 @@ Reads a JSON string and parses it into a DataFrame.
 
 ---
 
-## fr.read_csv(input_text: string, errors: ("raise" | "coerce") = "raise",start_index: number=0, line_separator:string = "\n"): DataFrame
+## `fr.read_csv(input_text: string, errors: ("raise" | "coerce") = "raise",start_index: number=0, line_separator:string = "\n"): DataFrame`
 
 Reads a raw CSV string and returns a DataFrame.
 
@@ -132,11 +132,11 @@ Or skipping the first row:
 
 ---
 
-## 🔢 fr Namespace: Numeric Utility Functions
+## Numeric Utility Functions
 
 The `fr` namespace provides standard numeric reducers that can be used with `.map_cols_numeric()` and other operations that expect `(values: number[]) => number`.
 
-### [`fr.sum(values: number[]): number`](#frsumvalues-number-number)
+### `fr.sum(values: number[]): number`
 
 Returns the total sum of the values.
 
@@ -146,7 +146,7 @@ fr.sum([1, 2, 3]); // 6
 
 ---
 
-### [`fr.mean(values: number[]): number`](#frmeanvalues-number-number)
+### `fr.mean(values: number[]): number`
 
 Returns the arithmetic average of the values.
 
@@ -156,7 +156,7 @@ fr.mean([2, 4, 6]); // 4
 
 ---
 
-### [`fr.min(values: number[]): number`](#frminvalues-number-number)
+### `fr.min(values: number[]): number`
 
 Returns the smallest number in the array.
 
@@ -166,7 +166,7 @@ fr.min([8, 3, 5]); // 3
 
 ---
 
-### [`fr.max(values: number[]): number`](#frmaxvalues-number-number)
+### `fr.max(values: number[]): number`
 
 Returns the largest number in the array.
 
@@ -176,7 +176,7 @@ fr.max([8, 3, 5]); // 8
 
 ---
 
-### [`fr.range(values: number[]): number`](#frrangevalues-number-number)
+### `fr.range(values: number[]): number`
 
 Returns the range (max - min) of the values.
 
@@ -186,7 +186,7 @@ fr.range([3, 6, 9]); // 6
 
 ---
 
-### [`fr.product(values: number[]): number`](#frproductvalues-number-number)
+### `fr.product(values: number[]): number`
 
 Returns the product of all numbers in the array.
 
@@ -196,7 +196,7 @@ fr.product([2, 3, 4]); // 24
 
 ---
 
-### [`fr.count(values: number[]): number`](#frcountvalues-number-number)
+### `fr.count(values: number[]): number`
 
 Returns the number of elements in the array.
 
@@ -234,7 +234,7 @@ Converts a JavaScript `Date` into an Excel numerical date
     //OUTPUT: 36526
 ```
 
-### fr.to_numeric(values:(string|number|boolean)[]):number[]
+### `fr.to_numeric(values:(string|number|boolean)[]):number[]`
 
 Converts an array of strings (or mixed values) to numbers.
 Non-convertible values become `NaN`.

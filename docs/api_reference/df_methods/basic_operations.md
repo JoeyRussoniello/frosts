@@ -17,7 +17,7 @@ These are the core methods you’ll use to inspect, manipulate, and reshape your
 
 ## ⚙️ DataFrame Utilities
 
-## `.copy()`
+### `.copy()`
 
 Returns a deep copy of the DataFrame, any modifications made on the new `DataFrame` will not affect the original
 
@@ -42,7 +42,7 @@ console.log(updated.columns);
 
 ---
 
-## `.shape(): [number, number]`
+### `.shape(): [number, number]`
 
 Returns the size of the dataframe's *values* as `[num_rows, num_columns]`
 
@@ -60,7 +60,7 @@ console.log(df.shape());
 
 ---
 
-## `.sortBy(columns: string[], ascending: boolean[] = [], inplace:boolean = False): DataFrame`
+### `.sortBy(columns: string[], ascending: boolean[] = [], inplace:boolean = False): DataFrame`
 
 Returns a new DataFrame sorted by one or more columns.
 
@@ -95,7 +95,7 @@ console.log(sorted.values);
 
 ---
 
-## `drop_rows(...rows: number[]): DataFrame`
+### `drop_rows(...rows: number[]): DataFrame`
 
 Removes specific rows by index from the DataFrame.
 
@@ -140,7 +140,7 @@ Output:
 
 ---
 
-## `head(n_rows: number = 10): DataFrame`
+### `head(n_rows: number = 10): DataFrame`
 
 Returns the first n_rows of the DataFrame.
 
@@ -169,7 +169,7 @@ Output:
 
 ---
 
-## `tail(n_rows: number = 10): DataFrame`
+### `tail(n_rows: number = 10): DataFrame`
 
 Returns the last n_rows of the DataFrame.
 
@@ -198,7 +198,7 @@ Output:
 
 ---
 
-## `print(n_rows: number = 5): void`
+### `print(n_rows: number = 5): void`
 
 Prints a formatted preview of the `DataFrame` to the console.
 
@@ -233,7 +233,7 @@ df.print(2);
 
 ---
 
-## `snapshot(label?: string)`
+### `snapshot(label?: string)`
 
 Prints a labeled preview of the `DataFrame` and returns the DataFrame itself.
 
@@ -263,19 +263,14 @@ df
 
 ---
 
-## `unique(...columns: string[]): DataFrame`
+### `unique(...columns: string[]): DataFrame`
 
 Returns a new DataFrame containing all **unique combinations** of values across the specified columns.
 
 - **`columns`**: One or more column names to evaluate uniqueness on.
 
-🔍 **Behavior**  
-Scans the DataFrame and extracts each distinct row formed by the specified columns. The result is a new DataFrame containing only those unique combinations.
-
 ✅ **Use When**  
 You want to identify all unique combinations of keys — such as `(Customer, Date)`, `(Region, Product)`, etc. — and work with the result as a standard DataFrame for further analysis or joins.
-
-### Example
 
 Given this dataset:
 
@@ -301,17 +296,20 @@ Output:
 
 ---
 
-## .is_empty():boolean
+### .is_empty():boolean
 
 Returns **true** if the DataFrame has no values, and **false** if there is a single `fr.Row` present in the dataframe.
 
-Especially useful after filtering or before exporting a DataFrame to ensure that it is has values before continuing with data processing/aggregation.
+✅ **Use When**  
+
+- You've performed a filtering operation on a dataset, and need to check if the DataFrame has any matches before aggregation
+- You're about to export a DataFrame and want to ensure that it is has values before continuing.
 
 ---
 
-## .has_column(columnName:string):boolean
+### .has_column(columnName:string):boolean
 
-**Checks whether `columnName` exists in the DataFrame. Useful for conditional logic before perfoming operaitons on columns.
+**Checks whether `columnName` exists in the DataFrame. Useful for conditional logic, especially when receiving dynamic inputs from PowerAutomate.
 
 ```ts
 let df = new fr.DataFrame([
@@ -677,7 +675,7 @@ The FrostRow API includes:
 - `.keys()` — Return the list of column names
 - `.raw` — Access the full underlying row as a plain object
 
-### Example 1: Basic Calculation
+**Example 1:** Basic Calculation
 
 ```ts
 let df = fr.read([
@@ -690,7 +688,7 @@ let doubled = df.apply(row => row.get_number("Sales") * 2);
 console.log(doubled); // [2000, 3000]
 ```
 
-### Example 2: Custom String Labeling
+**Example 2** Custom String Labeling
 
 ```ts
 let tags = df.apply(row => {
@@ -728,7 +726,7 @@ without the tedious manual type casting.
 
 ---
 
-### `df.apply_string(fn: (row) => string):string[]
+### `df.apply_string(fn: (row) => string):string[]`
 
 Similarly to `.apply_numeric`, applies a function to each row after **coercing all values to strings** without the need for typecasting.
 
@@ -773,40 +771,73 @@ let with_weighted = df.set_column("Weighted Grade",weighted_grades); //Add this 
 ## `replace_column(columnName: string, fn: (value: CellValue, index?: number) => CellValue, inplace: boolean = false): DataFrame`
 
 **Applies a transformation function to a column and replaces its values.**
-Each value in the specified column is passed through the provided function. The transformed column is returned as a new DataFrame unless inplace is set to true.
-
-### Arguments
 
 - `columnName:string` - The name of the column to replace
 - `fn` - The predicate function to apply to the values in columnNamn (optionally using its index)
 - `inplace`: Default false - If true, replaces the DataFrame in place, if false returns a new df.
 
-Why to Use:
+```ts
+let df = new fr.DataFrame([
+  ["Name", "Score"],
+  ["Alice", 80],
+  ["Bob", 90],
+]);
 
-Often these `.apply()` and `.set_column` patterns can get tedious. If you would like to peform an operation all at once, consider using .`replace_columns()` instead.
+// Add 5 bonus points to every score
+let updated = df.replace_column("Score", v => Number(v) + 5);
+updated.print();
 
-### Example
+/*
+Output: 
+
+| Name  | Score |
+| ----- | ----- |
+| Alice | 85    |
+| Bob   | 95    |
+
+*/
+```
+
+`replace_column()` vs. `apply()` + `set_column()`
+
+Suppose we want to filter rows, then update a column. With `apply()` and `set_column()`, you’d have to split the chain awkwardly.
 
 ```ts
 let df = new fr.DataFrame([
   ["Item", "Price"],
   ["Apple", 1.5],
-  ["Banana", 2.0]
+  ["Banana", 2.0],
+  ["Carrot", 1.2],
 ]);
 
-let updated = df.replace_column("Price", v => Number(v) * 2);
-updated.print();
+// Step 1: Filter the DataFrame
+df = df.filter("Price", p => Number(p) >= 1.5);
 
+// Step 2: Calculate the new prices using apply
+let new_price = df.apply(row => row.get_number("Price") * 1.1)
+
+// Step 3: Update the column using .set_column()
+df = df.set_column("Price", new_price);
+
+// Step 4: Print the result
+df.print();
 ```
 
-### Output
+But `.replace_column()` can be used to avoid breaking the method chain
 
-┌────────┬──────┐
-│ Item   │ Price│
-├────────┼──────┤
-│ Apple  │ 3    │
-│ Banana │ 4    │
-└────────┴──────┘
+```ts
+let df = new fr.DataFrame([
+  ["Item", "Price"],
+  ["Apple", 1.5],
+  ["Banana", 2.0],
+  ["Carrot", 1.2],
+]);
+
+df
+  .filter("Price", p => Number(p) >= 1.5)
+  .replace_column("Price", v => Number(v) * 1.1) //Note the v => value modifation, instead of row => FrostRow modification
+  .print();
+```
 
 ---
 

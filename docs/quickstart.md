@@ -91,7 +91,7 @@ The `print()` method used above is a helpful tool for **quickly checking the con
 
 ## 📊 Exploring Your Data
 
-### 📋 Viewing Data
+### Viewing Data
 
 Before doing any analysis, it's important to get a quick sense of what your data looks like. This can be done using `.print()` like above, or in any of the following ways
 
@@ -116,7 +116,7 @@ console.log(`This table has ${rows} rows and ${cols} columns.`);
 
 ---
 
-### 📊 Calculating Statistics
+### Calculating Statistics
 
 If you’re curious about averages, maximums, or just want a quick summary of your numbers, these built-in stats functions give you exactly that. Great for sanity checks or getting a feel for your dataset.
 
@@ -151,7 +151,7 @@ Max income:
 
 ---
 
-### 🔍 Selecting and Inspecting Data
+### Selecting and Inspecting Data
 
 Want to get a feel for what’s in your table? You can list the column names, check what types of values they hold, and zoom in on just the columns you care about.
 
