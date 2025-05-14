@@ -87,11 +87,11 @@ Now pressing the **"Run"** button should return
 (20 rows x 9 columns)
 ```
 
----
-
 The `print()` method used above is a helpful tool for **quickly checking the contents of your DataFrame**. Use it often to confirm that your data looks the way you expect, especially after filtering, sorting, or transforming it.
 
-## 📋 Viewing Data
+## 📊 Exploring Your Data
+
+### 📋 Viewing Data
 
 Before doing any analysis, it's important to get a quick sense of what your data looks like. This can be done using `.print()` like above, or in any of the following ways
 
@@ -116,7 +116,42 @@ console.log(`This table has ${rows} rows and ${cols} columns.`);
 
 ---
 
-## 🔍 Selecting and Inspecting Data
+### 📊 Calculating Statistics
+
+If you’re curious about averages, maximums, or just want a quick summary of your numbers, these built-in stats functions give you exactly that. Great for sanity checks or getting a feel for your dataset.
+
+```ts
+// Summary of specific columns
+df.describe("Age","Salary");
+
+// Summary of all numeric columns
+df.describe().print();
+
+// Individual stats
+console.log("Average salary:", df.mean("Salary"));
+console.log("Max income:", df.max("Income"));
+```
+
+Example Output:
+
+```text
+| Column     | Count | ... | 3rd Quartile | Maximum |
+| ---------- | ----- | --- | ------------ | ------- |
+| EmployeeID | 20    | ... | 1015.25      | 1020    |
+| Age        | 20    | ... | 41.25        | 50      |
+| Salary     | 20    | ... | 95750        | 120000  |
+| Income     | 20    | ... | 92750        | 110000  |
+
+(4 rows x 9 columns)
+Average salary:
+87600
+Max income:
+110000
+```
+
+---
+
+### 🔍 Selecting and Inspecting Data
 
 Want to get a feel for what’s in your table? You can list the column names, check what types of values they hold, and zoom in on just the columns you care about.
 
@@ -152,7 +187,9 @@ Column Data Types:
 
 ---
 
-## ✨ Filtering Rows
+## 🔍 Filtering and Sorting
+
+### Filtering Rows
 
 Need to focus on just part of your data? *Filtering* lets you pull out rows that match specific conditions, like location or salary range.
 
@@ -183,7 +220,7 @@ Like `.equal()`, shown above, more predicates can be used with `.filter()`, incl
 
 ---
 
-## ↕️ Sorting
+### Sorting
 
 Sorting lets you reorder your data based on the values in one or more columns. You can sort alphabetically, by number, or even by multiple columns at once — like sorting departments A–Z, then highest salary first.
 
@@ -199,42 +236,9 @@ sorted.print();
 
 ---
 
-## 📊 Calculating Statistics
+## 🧠 Transforming Your Data
 
-If you’re curious about averages, maximums, or just want a quick summary of your numbers, these built-in stats functions give you exactly that. Great for sanity checks or getting a feel for your dataset.
-
-```ts
-// Summary of specific columns
-df.describe("Age","Salary");
-
-// Summary of all numeric columns
-df.describe().print();
-
-// Individual stats
-console.log("Average salary:", df.mean("Salary"));
-console.log("Max income:", df.max("Income"));
-```
-
-Example Output:
-
-```text
-| Column     | Count | ... | 3rd Quartile | Maximum |
-| ---------- | ----- | --- | ------------ | ------- |
-| EmployeeID | 20    | ... | 1015.25      | 1020    |
-| Age        | 20    | ... | 41.25        | 50      |
-| Salary     | 20    | ... | 95750        | 120000  |
-| Income     | 20    | ... | 92750        | 110000  |
-
-(4 rows x 9 columns)
-Average salary:
-87600
-Max income:
-110000
-```
-
----
-
-## 🧠 Creating New Columns
+### Creating New Columns
 
 Sometimes you’ll want to create new values based on existing data — like calculating profit from income and salary. This shows how to add a new column using simple math across each row.
 
@@ -308,7 +312,7 @@ Example Output:
 
 ---
 
-## 🧹 Cleaning Up
+### Cleaning Up
 
 Cleaning your data often means removing columns you don’t need or renaming ones that are too long or unclear. These quick fixes make your table easier to work with and safer to share.
 
@@ -328,7 +332,7 @@ renamed.print();
 
 If you want to **summarize** your data or **restructure** it to better compare values, Frosts has tools to group and pivot your table with just a few lines of code.
 
-### 📊 Grouping with .groupBy()
+### Grouping with .groupBy()
 
 Here’s how to get the total salary by department:
 
@@ -386,7 +390,7 @@ Expected Output:
 
 > Indenting longer functions like `.groupBy()` is **not necessary**, but helps to make your code a lot **easier to read and work with**
 
-### 🔄 Aggregating with .pivot()
+### Aggregating with .pivot()
 
 If you want a quick summary table, `.pivot()` lets you group by one column and spread another across the top. It’s great for analysis and comparison, though **less ideal for building repeatable data pipelines**.
 
@@ -410,7 +414,9 @@ Expected Output:
 
 For both `.groupBy()` and `.pivot()` you can use any of the supported `fr.Operations`: `sum`, `min`, `max`, `count`, `mean`, `std_dev`
 
-## 💾 Saving Your Work
+## 💾 Output and Automation
+
+### Saving Your Data
 
 Once you're done transforming your data, you can write it back to Excel by saving it to a new sheet.
 
@@ -439,7 +445,7 @@ DataFrames can also be exported:
 * `to_worksheet(worksheet, "a")`: Appends onto `worksheet` instead of overwriting it.
 * `to_csv`: Exports content as *csv*, *tsv*, or any separated-value format
 * `to_table(table, "o")`: Overwrites an existing table's values, matching its headers
-* `to_table(table, "a")`: Appends ontto an existing table, matching its headers
+* `to_table(table, "a")`: Appends onto an existing table, matching its headers
 
 ---
 

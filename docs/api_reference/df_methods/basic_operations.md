@@ -527,7 +527,6 @@ Creates a new DataFrame replacing the column at `columnanme` with the input `val
 > If columnName exists in the DataFrame, it will overwrite that column, other wise it will add a new column.
 
 ```ts
-const fr = frosts;
 const df = new fr.DataFrame([
   ["Name", "Balance"],
   ["Alice", "$90"],
