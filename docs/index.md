@@ -8,6 +8,9 @@ hide_footer_buttons: true
 
 **Frosts** is a lightweight, Pandas-inspired data automation framework built for [Office Scripts](https://learn.microsoft.com/en-us/javascript/api/overview/excel) in Excel. It helps you clean, reshape, analyze, and export data — all inside Excel Online or Power Automate — using code that's easy to read and powerful to run.
 
+[Button with space](https://just-the-docs.com){: .btn .btn-purple .mr-2 }
+[Button](https://just-the-docs.com){: .btn .btn-blue }
+
 ---
 
 ## ❄️ What is Frosts?

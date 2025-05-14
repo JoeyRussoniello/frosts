@@ -12,13 +12,15 @@ description: pandas-inspired Excel scripting for Office Scripts
 just_the_docs:
   logo: "/images/frosts_logo.svg" # optional if you have a logo
   aux_links:
-    View on GitHub: https://github.com/JoeyRussoniello/frosts
+    View on GitHub: 
+      - https://github.com/JoeyRussoniello/frosts
   aux_links_new_tab: true  # optional, opens links in new tab
   nav_external_links: true # Enable aux_links in the navbar
   show_downloads: true
   search_enabled: true
   footer_content: ""
   footer_custom: true #Enable the custom footer HTML
+  enable_copy_code_button: true
 
 # Optional: Clean URLs
 permalink: pretty
