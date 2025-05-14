@@ -1,4 +1,8 @@
-# 🔗 Merging
+---
+title: 🔗 Merging
+nav_order: 4
+parent: The fr.DataFrame
+---
 
 Now that you’ve learned how to aggregate and summarize data within a DataFrame, you may often need to combine multiple DataFrames to enrich your analysis. Whether you are combining datasets based on shared keys, appending rows, or joining columns, the ability to merge DataFrames is essential in data processing.
 
@@ -6,16 +10,7 @@ frosts provides two powerful methods for combining DataFrames: `.merge()` for ke
 
 ## Table of Contents
 
-1. [`.merge()`](#mergeother-dataframe-on-string-how-inner--left--outer--inner)
-    1. [Inner Join](#inner-join)
-    2. [Left Join](#left-join)
-    3. [Outer Join](#outer-join)
-2. [`.validate_keys()`](#validate_keykey-dataframe-on-string-string--string-errors-raise--return--raise)
-3. [`.concat()`](#concatotherdataframe-columnselection-innerouterleft--outer)
-    1. [Outer Concatenation](#outer-concatenation-default)
-    2. [Inner Concatenation](#inner-concatenation)
-    3. [Left Concatenation](#left-concatenation)
-4. [`fr.combine_dfs()]
+{:toc}
 
 ### `.merge(other: DataFrame, on: string[], how: "inner" | "left" | "outer" = "inner")`
 

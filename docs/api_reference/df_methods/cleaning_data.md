@@ -1,13 +1,14 @@
-# Cleaning Data
+---
+title: 🧹 Cleaning Data
+nav_order: 6
+parent: The fr.DataFrame
+--- 
 
 Many real-world Excel files contain messy, incomplete, or inconsistent values. To simplify cleaning tasks, `frosts` provides a **predicates** submodule for common checks like blank cells or matching values, as well as built in **DataFrame methods** for common cleaning patterns.
 
 ## Table Of Contents
 
-1. [`Filtering with Predicates`](#the-predicates-submodule-boolean-predicates-and-filtering)
-2. [`encode_headers()`](#encode_headers)
-3. [`fill_na()`](#fill_nacolumnname-stringstringall-method-prev--next--value-value-string--number--booleandataframe)
-4. [`melt() and melt_except()`](#meltnewcolumnname-string-newvaluenamestring-columnsstring-dataframe)
+{:toc}
 
 ## The `predicates` submodule, Boolean Predicates, and filtering
 

@@ -1,12 +1,14 @@
-# 🔽Filtering
+---
+title: 🔽 Filtering
+nav_order: 2
+parent: The fr.DataFrame
+--- 
 
 Frosts DataFrames offer various filtering methods, each designed for specific use cases to filter data on a given condition.
 
 ## Table of Contents
 
-1. [`🔍.filter()`](#filterkey-string-predicate-value--boolean-inplaceboolean--false-dataframe)
-2. [`💬.query()`](#querycondition-row-row--boolean-dataframe)
-3. [`✅.isin()`](#isincolumn-string-values-setstring--number--boolean-dataframe)
+{:toc}
 
 ## Filter Functions
 

@@ -1,4 +1,8 @@
-# Reading and Processing Data
+---
+title: Reading and Processing Data
+nav_order: 3
+has_children: true
+---
 
 This section documents the `fr` namespace — a collection of **import helpers** and **utility functions** designed to make data ingestion and lightweight transformation easy in `frosts`.
 
@@ -8,24 +12,9 @@ The functions in this section allow frosts to read from Excel, CSV, and JSON doc
 
 📚 Table of Contents
 
-- [`🔢 read_range()`](#frread_rangerange-excelscriptrange-dataframe)
-- [`📄 read_sheet()`](#frread_sheetsheet-excelscriptworksheet-dataframe)
-- [`⏭️ read_after()`](#frread_aftersheet-excelscriptworksheet-n_rows-number-n_cols-number-dataframe)
-- [`🧾 read_json()`](#frread_jsonjsonstringdataframe)
-- [`📑 read_csv()`](#frread_csvinput_text-string-errors-raise--coerce--raisestart_index-number0-line_separatorstring--n-dataframe)
-- [🧮 Numeric Utility Functions](#-fr-namespace-numeric-utility-functions)
-  - [`sum()`](#frsumvalues-number-number)
-  - [`mean()`](#frmeanvalues-number-number)
-  - [`min()`](#frminvalues-number-number)
-  - [`max()`](#frmaxvalues-number-number)
-  - [`range()`](#frrangevalues-number-number)
-  - [`product()`](#frproductvalues-number-number)
-  - [`count()`](#frcountvalues-number-number)
-  - [`today`](#frtodaynumber)
-  - [`toExcelDate()`](#toexceldatejsdate-date-include_timeboolean-number)
-  - [`to_numeric()`](#frto_numericvaluesstringnumberbooleannumber)
+{:toc}
 
---- 
+---
 
 ## fr.read_range(range: ExcelScript.Range): DataFrame
 
@@ -264,6 +253,6 @@ Frost's flexible and intuitive design makes reading and writing data a breeze �
 - Exporting gives you full control over format, structure, and target.
 - Everything integrates seamlessly with ExcelScript, Power Automate, and the broader JavaScript ecosystem.
 
-Now that you’ve mastered data input, you're ready to start processing data in the [DataFrame object](dataframe_index.md)!
+Now that you’ve mastered data input, you're ready to start really processing data in the [DataFrame object](dataframe_index.md)!
 
 [Return to API Reference](/frosts)

@@ -1,4 +1,7 @@
-# Frosts: 15-Minute Quickstart Guide
+---
+title: 15-Minute Quickstart Guide
+nav_order: 2
+---
 
 Welcome to **frosts**, a beginner-friendly data analysis toolkit for Excel using Office Scripts. This guide walks you through the basics of working with data using Frosts, even if you've never written a line of code before. If you can use Excel, you can use Frosts.
 

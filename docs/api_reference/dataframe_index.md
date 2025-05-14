@@ -1,4 +1,8 @@
-# frosts.DataFrame
+---
+title: The fr.DataFrame
+nav_order: 4
+has_children: true
+---
 
 ## 🔹 Constructor
 
@@ -98,7 +102,7 @@ The methods of the `fr.DataFrame` class are organized into five main categories,
 - [Filtering](df_methods/filtering.md): Methods for selecting and filtering rows based on conditions.
 - [Aggregations](df_methods/aggregation.md): Methods for summarizing and calculating statistics on data.
 - [Merging](df_methods/merging.md): Methods for combining DataFrames.
-- [Imports/Exports](df_methods/outputs.md): Ways to import separated values to DataFrames, and export results for PowerAutomate/further scripting
+- [Exports](df_methods/outputs.md): Ways to import separated values to DataFrames, and export results for PowerAutomate/further scripting
 
 Please refer to the corresponding pages for detailed information and examples for each category.
 

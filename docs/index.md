@@ -1,4 +1,7 @@
-# Welcome to Frosts
+---
+title: Welcome to Frosts
+nav_order: 1
+---
 
 !["Frost Logo"](images/frosts_logo.svg)
 

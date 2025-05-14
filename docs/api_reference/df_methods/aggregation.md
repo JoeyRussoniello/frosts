@@ -1,13 +1,14 @@
-# 🔢 Aggregation
+---
+title: 🔢 Aggregation
+nav_order: 2
+parent: The fr.DataFrame
+---
 
 Aggregation methods allow you to summarize and combine your data in meaningful ways, providing insights like sums, averages, counts, and more. Whether you're interested in grouping data by categories or calculating overall statistics, aggregation gives you the tools to analyze data at a higher level.
 
 ## Table of Contents
 
-1. [`.pivot()`](#pivotindex-columns-values-aggfunc--count-fillna--null)
-2. [`.groupby()`](#groupbygroup_keys-string--string-aggregations--column-string-operation--operation--dataframe)
-3. [`.describe()`](#describecolumns)
-4. [Column Aggregation Methods](#column-aggregation-functions)
+{:toc}
 
 ## Aggregation Functions
 

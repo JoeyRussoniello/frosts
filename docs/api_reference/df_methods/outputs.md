@@ -1,14 +1,14 @@
-# 📤 Exporting and Output Options
+---
+title: 📤 Exporting and Output Options
+nav_order: 5
+parent: The fr.DataFrame
+---
 
 Once your data is prepared and processed, you'll often want to save it for later use or share it with other systems. Frosts makes it easy to export your DataFrames to common formats like Excel, CSV, and JSON, and just as simple to load them back in.
 
 ## Table of Contents
 
-1. [`to_worksheet()`](#to_worksheetworksheetexcelscriptworksheet-method-oa--o)
-2. [`to_table()`](#to_tabletable-excelscripttable-method-o--a--o)
-3. [`to_json()`](#to_jsonheadersboolean--truestring)
-4. [`to_csv()`](#to_csvheadersboolean--true-separatorstring--string)
-5. [`to_array()`](#to_arrayheaders-boolean--true-string--number--boolean)
+{:toc}
 
 ## to_worksheet(worksheet:ExcelScript.Worksheet, method: ("o"|"a") = "o")
 

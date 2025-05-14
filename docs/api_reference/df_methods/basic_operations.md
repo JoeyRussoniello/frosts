@@ -1,33 +1,12 @@
-# 🔄 Essential Operations
+---
+title: 🔄 Essential Operations
+nav_order: 1
+parent: The fr.DataFrame
+--- 
 
 ## Table of Contents
 
-1. ⚙️ [`DataFrame` Utilities](#️-dataframe-utilities)
-    1. [`.copy()`](#copy)
-    2. [`.shape()`](#shape-number-number)
-    3. [`.sortBy()`](#sortbycolumns-string-ascending-boolean---inplaceboolean--false-dataframe)
-    4. [`.drop_rows()`](#drop_rowsrows-number-dataframe)
-    5. [`.head()`](#headn_rows-number--10-dataframe)
-    6. [`.tail()`](#tailn_rows-number--10-dataframe)
-    7. [`.print()`](#printn_rows-number--5-void)
-    8. [`.unique()`](#uniquecolumns-string-dataframe)
-    9. [`.is_empty()`](#is_emptyboolean)
-    10. [`.has_column()`]()
-2. [🗂️ Column Management](#️-column-management)
-    1. [`.add_column()`](#add_columncolumnname-string-values-stringnumberboolean-inplaceboolean--falsedataframe)
-    2. [`.drop()`](#dropkeysstringdataframe)
-    3. [`.add_formula_column()`](#add_formula_columncolumnnamestring-formulastring-inplaceboolean--falsedataframe)
-    4. [`.get_columns()`](#get_columnskeysstringdataframe)
-    5. [`.get_column()`](#get_columnkeystringstringnumberboolean)
-    6. [`.set_column()`](#set_columncolumnnamestring-valuesstringnumberboolean-inplaceboolean--falsedataframe)
-    7. [`.rename()`](#renamemapping--oldkey-string-string--dataframe)
-3. [➕ Row-Wise Operations](#-row-wise-operations)
-    1. [`.iterrows()`](#iterrows)
-    2. [`.apply()`](#applytfn-row-row--t-t)
-    3. [`.apply_numeric()`](#dfapply_numericfn-row--number-number)
-    4. [`.apply_string()`](#dfapply_stringfn-row--stringstring)
-    5. [`.map_cols_numeric()`](#dfmap_cols_numericfn-values--number-columns-number)
-    6. [`.replace_column()`]()
+{:toc}
 
 ## ⚙️ DataFrame Utilities
 
