@@ -10,15 +10,14 @@ These are the core methods you’ll use to inspect, manipulate, and reshape your
 
 <!-- Frosts Collapsible TOC Block -->
 ## Table of Contents
-{: .no_toc }
-
-<a name="table-of-contents"></a>
 
 <details open markdown="block">
-  <summary>Click to expand</summary>
+  <summary>
+    Click to Expand
+  </summary>
   {: .text-delta }
-
-  {:toc}
+1. TOC
+{:toc}
 </details>
 
 ---
