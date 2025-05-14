@@ -6,6 +6,8 @@ parent: The fr.DataFrame
 
 Aggregation methods allow you to summarize and combine your data in meaningful ways, providing insights like sums, averages, counts, and more. Whether you're interested in grouping data by categories or calculating overall statistics, aggregation gives you the tools to analyze data at a higher level.
 
+## Table of Contents
+
 ---
 
 - Table of Contents
@@ -81,7 +83,7 @@ If a city-department combination does not exist in the data, the corresponding c
 **Groups the DataFrame** by one or more keys and **applies aggregation functions** to specified columns.
 This method is useful for summarizing data by categories (e.g., totals, averages, counts) using intuitive object-based syntax.
 
-#### Parameters
+**Parameters**:
 
 - `group_keys (string | string[])` — One or more columns to group by. Each unique combination of values will form a group.
 - `aggregations ({ [column: string]: Operation | Operation[] })` — An object mapping column names to one or more aggregation functions to apply. Valid operations include:
@@ -93,11 +95,11 @@ This method is useful for summarizing data by categories (e.g., totals, averages
   - 'median': Median of values.
   - 'std_dev': Sample standard deviation of values
 
-#### Returns
+**Returns**:
 
 A new DataFrame where each row represents a unique combination of group keys, and each additional column contains the result of one aggregation operation.
 
-##### Grouping by a Single Column with Multiple Aggregations
+#### Grouping by a Single Column with Multiple Aggregations
 
 ```ts
 // Group by "Department" and apply different aggregations to "Salary" and "Bonus"
@@ -115,8 +117,7 @@ Output:
 | Engineering | 50000       | 100000     | 5000      |
 | Sales       | 30000       | 120000     | 10000     |
 
-
-##### Grouping by Multiple Columns
+#### Grouping by Multiple Columns
 
 ```ts
 // Group by both "Department" and "Region"

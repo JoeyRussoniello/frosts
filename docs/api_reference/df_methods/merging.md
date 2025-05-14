@@ -128,7 +128,7 @@ This type of join is especially useful when working with time series data or log
 
 Checks whether all join key values in the current DataFrame exist in the corresponding column of another DataFrame.
 
-#### Parameters
+**Parameters**:
 
 - `key`: A reference DataFrame (typically the lookup table or foreign key source).
 - `on`: Column(s) to match.
@@ -139,7 +139,7 @@ Checks whether all join key values in the current DataFrame exist in the corresp
   - "return": Returns an array of unmatched values (allows for graceful handling).
   - "warn": Similarly returns the array of unmatched values, but will log a warning message if there are any unmatched keys
 
-#### Returns
+**Returns**:
 
 - If `errors = "return" or "warn`: An array of missing values.
 - If `errors = "raise"`: Throws an error and stops execution if mismatches are found.
@@ -151,7 +151,7 @@ Checks whether all join key values in the current DataFrame exist in the corresp
 - You're validating referential integrity between two datasets.
 - You need to detect and handle unexpected join mismatches (e.g., early fail or alert system).
 
-#### Examples
+**Examples**:
 
 1) Checking keys with the same column names
 
@@ -274,6 +274,7 @@ Combines an array of DataFrames into a single DataFrame by vertically concatenat
   - `"left"`: Uses only the columns from the **first (base) DataFrame**.
 
 🔍 **Behavior**  
+
 - If no DataFrames are provided, it throws a `RangeError`.
 - If a single DataFrame is provided, it returns that DataFrame unchanged.
 - Otherwise, it takes the first DataFrame as the base, concatenates the remaining DataFrames onto it (using the same column alignment logic as `concat()`), and returns the modified base DataFrame.
@@ -285,14 +286,14 @@ Use `combine_dfs()` when you have multiple DataFrames with potentially different
 
 #### Input DataFrames
 
-**df1**
+**df1**:
 
 | Name  | Age |
 |-------|-----|
 | Alice | 30  |
 | Bob   | 28  |
 
-**df2**
+**df2**:
 
 | Name  | Salary |
 |-------|--------|

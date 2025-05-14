@@ -4,6 +4,10 @@ nav_order: 1
 parent: The fr.DataFrame
 --- 
 
+These are the core methods you’ll use to inspect, manipulate, and reshape your fr.DataFrame. From selecting rows and columns to adding formulas, sorting, and performing row-wise math — this page covers all the foundational tools you’ll need to start working with structured data in Frosts.
+
+## Table of Contents
+
 ---
 
 - Table of Contents

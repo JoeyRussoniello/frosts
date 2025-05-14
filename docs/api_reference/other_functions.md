@@ -8,6 +8,8 @@ This section documents the `fr` namespace — a collection of **import helpers**
 
 The functions in this section allow frosts to read from Excel, CSV, and JSON documents, as well as perform optimized mathematical operations with minimal code.
 
+## Table of Contents
+
 ---
 
 - Table of Contents

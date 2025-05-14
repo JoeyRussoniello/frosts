@@ -6,6 +6,8 @@ parent: The fr.DataFrame
 
 Many real-world Excel files contain messy, incomplete, or inconsistent values. To simplify cleaning tasks, `frosts` provides a **predicates** submodule for common checks like blank cells or matching values, as well as built in **DataFrame methods** for common cleaning patterns.
 
+## Table of Contents
+
 ---
 
 - Table of Contents
@@ -213,7 +215,7 @@ Use it when your dataset has blanks that you want to automatically and consisten
 
 ---
 
-## Parameters
+**Parameters**:
 
 | Parameter       | Type                          | Description |
 |-----------------|-------------------------------|-------------|
@@ -263,7 +265,7 @@ The `.melt()` method solves this by transforming your data into a **long format*
 
 You can think of `melt()` as the opposite of a pivot: it "unspreads" your data and turns columns into rows.
 
-## Parameters
+**Parameters**:
 
 | Parameter        | Type         | Description |
 |------------------|--------------|-------------|
@@ -277,7 +279,6 @@ You can think of `melt()` as the opposite of a pivot: it "unspreads" your data a
 >
 > - All columns *not* listed in `...columns` will be treated as identifier columns and preserved in the output.
 > - If the melted columns contain mixed types (e.g., numbers and booleans), their values will be automatically converted to strings for consistency.
-
 
 ```ts
 const df = new frosts.DataFrame([
