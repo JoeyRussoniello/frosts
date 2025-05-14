@@ -6,7 +6,20 @@ parent: The fr.DataFrame
 
 These are the core methods you’ll use to inspect, manipulate, and reshape your fr.DataFrame. From selecting rows and columns to adding formulas, sorting, and performing row-wise math — this page covers all the foundational tools you’ll need to start working with structured data in Frosts.
 
-{% include toc_collapsible.md %}
+---
+
+<!-- Frosts Collapsible TOC Block -->
+## Table of Contents
+{: .no_toc }
+
+<a name="table-of-contents"></a>
+
+<details open markdown="block">
+  <summary>Click to expand</summary>
+  {: .text-delta }
+
+  {:toc}
+</details>
 
 ---
 

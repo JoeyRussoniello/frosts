@@ -11,11 +11,10 @@ description: pandas-inspired Excel scripting for Office Scripts
 # Automatically generate a table of contents on each page
 just_the_docs:
   logo: "/images/frosts_logo.svg" # optional if you have a logo
-  aux_links:
-    View on GitHub: 
-      - https://github.com/JoeyRussoniello/frosts
   aux_links_new_tab: true  # optional, opens links in new tab
-  nav_external_links: true # Enable aux_links in the navbar
+  nav_external_links:  # Enable aux_links in the navbar
+    "View Frosts on GitHub": 
+      - "//github.com/JoeyRussoniello/frosts"
   show_downloads: true
   search_enabled: true
   footer_content: ""
