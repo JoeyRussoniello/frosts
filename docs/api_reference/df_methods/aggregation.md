@@ -8,6 +8,7 @@ Aggregation methods allow you to summarize and combine your data in meaningful w
 
 ## Table of Contents
 
+1. Table of Contents
 {:toc}
 
 ## Aggregation Functions

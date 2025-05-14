@@ -14,7 +14,7 @@ We’ll use a sample file called [Employees.xlsx](https://github.com/JoeyRussoni
 
 ---
 
-## ⏰ Step 0: Setup
+## ⏰ Setup and Installation
 
 To follow along, download and open [Employees.xlsx](https://github.com/JoeyRussoniello/frosts/blob/main/examples/Introduction/Employees.xlsx?raw=true). Then open the **Automate** tab and copy the [frosts.ts code](https://github.com/JoeyRussoniello/frosts/blob/main/frosts.ts) into the coding pane.
 
@@ -134,7 +134,7 @@ cols.print(2); //Print only the first and last 2 rows
 
 Expected Output:
 
-```yaml
+```text
 Column Names:
 (9) ["EmployeeID", "Name", "Department", "City", "Age", "Salary", "Income", "SSN", "Address"]
 
@@ -217,7 +217,7 @@ console.log("Max income:", df.max("Income"));
 
 Example Output:
 
-```yaml
+```text
 | Column     | Count | ... | 3rd Quartile | Maximum |
 | ---------- | ----- | --- | ------------ | ------- |
 | EmployeeID | 20    | ... | 1015.25      | 1020    |
@@ -253,7 +253,7 @@ df
 
 Example Output:
 
-```yaml
+```text
 🔍 Snapshot: Before Modifications
 | EmployeeID | Name            | ... | SSN         | Address           |
 | ---------- | --------------- | --- | ----------- | ----------------- |
@@ -355,7 +355,7 @@ df
 
 Expected Output:
 
-```yaml
+```text
 🔍 Snapshot: By Department
 | Department  | Salary_sum |
 | ----------- | ---------- |
@@ -399,7 +399,7 @@ df.pivot("City","Department","Salary","mean").print();
 
 Expected Output:
 
-```yaml
+```text
 | City          | Engineering | ... | Marketing | Sales |
 | ------------- | ----------- | --- | --------- | ----- |
 | New York      | 107500      | ... | 75000     | 75000 |
