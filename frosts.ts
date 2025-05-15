@@ -1,7 +1,7 @@
 namespace fr {
     let SEPARATOR = "~~~";
+    export let TYPE_DETECTION_SAMPLE_SIZE = 100;
     const DEV_SHEET_NAME = "___DEV_SHEET_NULL#859132";
-    const TYPE_DETECTION_SAMPLE_SIZE = 100;
 
     /**
      * Returns a current column separator string used internally by the framework
@@ -21,6 +21,16 @@ namespace fr {
      */
     export function set_separator(separator: string) {
         SEPARATOR = separator;
+    }
+
+    /**
+     * Sets a new internal sample size for DataFrame type detection. Increasing sample size
+     * increases probability of accuracy, but may decrease performance
+     *
+     * @param {number} new_size - The number to use as the new sample size.
+     */
+    export function set_type_detection_sample_size(new_size: number) {
+        TYPE_DETECTION_SAMPLE_SIZE = new_size;
     }
 
     //Helper function for DataFrame Initialization
@@ -1244,8 +1254,8 @@ namespace fr {
             this.__assign_inplace(output, inplace)
             return output
         }
-        
-        
+
+
         fill_na(columnName: (string | string[] | "ALL"), method: ("prev" | "next" | "value"), value?: CellValue): DataFrame {
             if (typeof columnName != "string" || columnName == "ALL") {
                 let columns: string[];
@@ -1339,7 +1349,7 @@ namespace fr {
             return this.set_column(columnName, formula_col, inplace);
         }
 
-        
+
         to_worksheet(worksheet: ExcelScript.Worksheet, method: ("o" | "a") = "o") {
             //Include headers only when overwriting
             let export_array: CellValue[][] = this.to_array(method == "o");
@@ -1390,7 +1400,7 @@ namespace fr {
             }
             //*/
         }
-        
+
         hardcode_formulas(workbook: ExcelScript.Workbook, inplace: boolean = true): DataFrame {
             /*
               Calculate and Hardcode all formula results in the input df. 
@@ -1628,7 +1638,7 @@ namespace fr {
             console.log([headerRow, divider, ...dataRows, "", size_statement].join("\n"));
         }
 
-        
+
         validate_key(key: DataFrame, on: [string, string] | string, errors: ("raise" | "return" | "warn") = "raise"): CellValue[] {
             let left_on: string;
             let right_on: string;
@@ -1778,7 +1788,7 @@ namespace fr {
 
             return new DataFrame([headers, ...data])
         };
-        
+
         to_table(table: ExcelScript.Table, method: ('o' | 'a')) {
             switch (method) {
                 case 'o': return this.__overwrite_to_table(table);
@@ -1832,5 +1842,5 @@ namespace fr {
 function main(workbook: ExcelScript.Workbook) {
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
     // YOUR CODE GOES HERE
-    
+
 }
