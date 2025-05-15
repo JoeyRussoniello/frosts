@@ -775,7 +775,7 @@ let with_weighted = df.set_column("Weighted Grade",weighted_grades); //Add this 
 
 ---
 
-## `replace_column(columnName: string, fn: (value: CellValue, index?: number) => CellValue, inplace: boolean = false): DataFrame`
+### `replace_column(columnName: string, fn: (value: CellValue, index?: number) => CellValue, inplace: boolean = false): DataFrame`
 
 **Applies a transformation function to a column and replaces its values.**
 
