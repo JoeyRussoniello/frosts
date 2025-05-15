@@ -212,7 +212,7 @@ let high_earners = df.filter("Salary", v => Number(v) > 90000);
 high_earners.print();
 
 // Combine both conditions using .query()
-let both_filters = df.query(row => row["City"] === "New York" && Number(row["Salary"]) > 90000);
+let both_filters = df.query(row => row.get_string("City") === "New York" && row.get_number("Salary") > 90000);
 filtered.print();
 ```
 
@@ -235,11 +235,11 @@ Sorting lets you reorder your data based on the values in one or more columns. Y
 
 ```ts
 // Sort by Age in ascending order
-let by_age = df.sortBy("Age", "asc");
+let by_age = df.sortBy({"Age": true});
 by_age.print();
 
 // Sort by Department A-Z, then Salary high-to-low
-let sorted = df.sortBy(["Department", "Salary"], [true, false]);
+let sorted = df.sortBy({"Department":true, "Salary":false});
 sorted.print();
 ```
 

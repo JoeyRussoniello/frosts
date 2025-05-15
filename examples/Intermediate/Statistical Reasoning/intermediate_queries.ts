@@ -27,7 +27,7 @@ function main(workbook: ExcelScript.Workbook) {
     bonuses
         .set_column("Bonus Variance", bonus_variance)
         .filter("Bonus Variance", v => v > 0)
-        .sortBy(["Bonus Variance"], [false])
+        .sortBy({"Bonus Variance":false})
         .get_columns("EmployeeID", 'Title', "Bonus", "Standard Bonus")
         .to_worksheet(TopBonuses, "o");
 

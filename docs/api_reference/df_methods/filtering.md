@@ -83,18 +83,23 @@ const alices = df.filter("Name",fr.predicates.equal("Alice"))
 
 ---
 
-### `💬.query(condition: (row: Row) => boolean): DataFrame`
+### `💬.query(condition: (row: FrostRow) => boolean): DataFrame`
 
-Filters the DataFrame using a custom condition that is applied to each row. The condition can be as complex as needed, involving multiple columns or complex logic.
+Filters the DataFrame using a custom condition that is applied to each row. The condition can reference multiple columns and use logical operators for complex row-level filtering.
 
-- `condition`: A function that receives the full row object and returns a boolean indicating whether the row should be included.
+- `condition`:  A function that receives a `FrostRow` object and returns `true` for rows to keep, or `false` to discard.
 
 #### When to Use `.query()`
 
-Use `.query()` for complex conditions that involve multiple columns or require more advanced logic, such as combining multiple predicates with logical operators `(&&, ||)`.
+- You need to **filter by multiple columns at once.**
+- You want to use typed getters like `get_number()` or `get_string()` for clarity and safety.
+- You’re chaining methods like `.encode_headers()` or `.groupBy()` and want expressive logic without messy index access.
 
 ```ts
-const highEarners = df.query(row => row["Salary"] > 100000 && row["Age"] < 50);
+const highEarners = df.query(row =>
+  row.get_number("Salary") > 100000 && row.get_number("Age") < 50
+);
+
 console.log(highEarners.values);
 /*
 [
@@ -103,7 +108,10 @@ console.log(highEarners.values);
 ]
 */
 
-const youngTechies = df.query(row => row["Age"] < 30 && row["Department"] === "Engineering");
+const youngTechies = df.query(row =>
+  row.get_number("Age") < 30 && row.get_string("Department") === "Engineering"
+);
+
 console.log(youngTechies.values);
 /*
 [
@@ -112,6 +120,8 @@ console.log(youngTechies.values);
 ]
 */
 ```
+
+> Tip: You can always fall back to `row => row.raw["Column"]` if needed, but it's best to use `get_string()`, `get_number()`, and `get_boolean()` for safer logic.
 
 ---
 

@@ -42,7 +42,7 @@ function main(workbook: ExcelScript.Workbook):string{
         "Charges_sum": "Revenue", 
         "Charges_count": "Room Nights"
         })
-      .sortBy(["Property Name", "Month"], [true, true]) //sort ascending for easier reading
+      .sortBy({"Property Name":true, "Month":true}) //sort ascending for easier reading
     
     //Write output to a worksheet
     output.to_worksheet(workbook.getWorksheet("Performance by Month"));

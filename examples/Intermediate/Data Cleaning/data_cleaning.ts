@@ -22,8 +22,8 @@ function main(workbook: ExcelScript.Workbook) {
         .drop("Total")
         .encode_headers(
             "Region",
-            row => row['Product'].toString().includes(":"), //Headers have ":" in the 'Product'
-            row => row["Product"].toString().split(": ")[1].split(" (")[0], //Get the text after the ":" in 'Product'
+            row => row.get_string('Product').includes(":"), //Headers have ":" in the 'Product'
+            row => row.get_string("Product").split(": ")[1].split(" (")[0], //Get the text after the ":" in 'Product'
             false //Don't keep the header rows after encoding
         )
         .melt_except(

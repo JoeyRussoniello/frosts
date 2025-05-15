@@ -67,16 +67,14 @@ console.log(df.shape());
 
 ---
 
-### `.sortBy(columns: string[], ascending: boolean[] = [], inplace:boolean = False): DataFrame`
+### `.sortBy(sortSpec: { [column: string]: boolean }, inplace: boolean = false): DataFrame`
 
-Returns a new DataFrame sorted by one or more columns.
+Returns a new DataFrame sorted by one or more columns and their corresponding sort order.
 
-- `columns`: An array of column names by which to sort.
-- `ascending`: An optional array of booleans indicating the sort order for each corresponding column
-  - `true` for ascending order.
-  - `false` for descending order.
-- If the `ascending` array is not provided. Sorts will default to descending order.
-- `inplace (optional)`: If true, modifies the current DataFrame directly. Otherwise, only returns a new one. Default is `false`.
+- `sortSpec`: An object where keys are column names and values are booleans indicating sort order.
+  - `true` for ascending.
+  - `false` for descending.
+- `inplace` (optional): If `true`, modifies the current DataFrame in place as well as returning a new DataFrame. Default is `false`.
 
 ```ts
 const df = new frosts.DataFrame([
@@ -87,7 +85,7 @@ const df = new frosts.DataFrame([
   ["HR", 60000]
 ]);
 
-const sorted = df.sortBy(["Department", "Salary"], [true, false]);
+const sorted = df.sortBy({ Department: true, Salary: false });
 
 console.log(sorted.values);
 /*
@@ -461,7 +459,7 @@ If you want to perfrom aggregation functions, sorting, or otherwise calculate th
 ```ts
 let w_bmi = df.add_formula_column("BMI","ROUND([@weight_kg]/([@height_cm] * [@height_cm]),1)")
 let w_bmi_values = df.hardcode_values(workbook) //Plug in the workbook from the Office Scripts environment
-let sorted_by_bmi = w_bmi_values.sortBy(["BMI"]);
+let sorted_by_bmi = w_bmi_values.sortBy({"BMI":true});
 ```
 
 ---

@@ -114,8 +114,9 @@ Similarly, to `begins_with`, checks if row values end with the `value` text
 ```ts
 encode_headers(
   columnName: string,
-  isHeaderRow: (row: Row) => boolean,
-  extractValue: (row: Row) => CellValue
+  isHeaderRow: (row: FrostRow) => boolean,
+  extractValue: (row: FrostRow) => CellValue,
+  keepHeaders: boolean = false
 ): DataFrame
 ```
 
@@ -125,28 +126,20 @@ The `encode_headers()` method lets you **identify these headers**, **extract the
 
 ---
 
-## Parameters
+Parameters  
 
 | Parameter      | Type                          | Description |
 |----------------|-------------------------------|-------------|
 | `columnName`   | `string`                      | The name of the new column that will store the header values. |
-| `isHeaderRow`  | `(row: Row) => boolean`       | A function that returns `true` if a given row is a header row. |
-| `extractValue` | `(row: Row) => CellValue`     | A function that extracts the header value from a header row. |
+| `isHeaderRow`  | `(row: FrostRow) => boolean`       | A function that returns `true` if a given row is a header row. |
+| `extractValue` | `(row: FrostRow) => CellValue`     | A function that extracts the header value from a header row. |
 | `keepHeaders`  | `boolean=false`               | Whether to keep the rows flagged as headers in the output (default `false`) |
 
----
+Returns a new `DataFrame` with the extracted header values encoded in the specified column.
 
-## Returns
+Suppose you have an Excel export in this form:
 
-A new `DataFrame` with the extracted header values encoded in the specified column.
-
----
-
-## Example
-
-Suppose you have an Excel export of this form:
-
-| A                                         | Sales       | Variance to Budget       |
+| City                                     | Sales   | Variance to Budget       |
 |------------------------------------------|---------|---------|
 | **Sales Region: West (W001)**            |         |         |
 | Los Angeles                              | 5500.00 | 5.2%    |
@@ -163,14 +156,14 @@ You can propagate the property ID using:
 ```ts
 df.encode_headers(
   "PropertyID",
-  row => row["A"].toString().includes("Sales Region: "),
-  row => row["A"]?.split("(")[1]?.split(")")[0] //Get the text in between the parentheses
+  row => row.get_string("City").includes("Sales Region: "),
+  row => row.get_string("City").split("(")[1]?.split(")")[0] //Get the text in between the parentheses
 )
 ```
 
 With `keepHeaders = false` this would return:
 
-| A                                         | Sales       | Variance to Budget     | RegionCode |
+| City                                     | Sales       | Variance to Budget     | RegionCode |
 |------------------------------------------|---------|---------|------------|
 | Los Angeles                              | 5500.00 | 5.2%    | W001       |
 | San Diego                                | 4200.00 | 4.8%    | W001       |
@@ -181,7 +174,7 @@ With `keepHeaders = false` this would return:
 
 And with `keepHeaders = true` this would return
 
-| A                                         | B       | C       | RegionCode |
+| City                                     | Sales       | Variance to Budget     | RegionCode |
 |------------------------------------------|---------|---------|------------|
 | **Sales Region: West (W001)**            |         |         | W001       |
 | Los Angeles                              | 5500.00 | 5.2%    | W001       |
@@ -195,10 +188,10 @@ And with `keepHeaders = true` this would return
 
 ---
 
-## Tips
-
-- Rows before the first header will receive an **empty string** in the new column.
-- Can be chained with `.drop()` if you would to drop the original column
+>Tips:
+>
+>- **Rows before the first detected header will receive an empty string in the new column**
+>- **You can chain this with `.drop()` if you want to remove the original header column.**
 
 ---
 
