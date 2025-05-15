@@ -72,9 +72,7 @@ function main(workbook: ExcelScript.Workbook){
 }
 ```
 
-{: .note-title }
-> Note for Beginners
->
+>**Note for Beginners:**
 >Every Excel Script starts with a special function called `main()` — this is the part of the script that runs when you press the "Run" button. You don't need to write this yourself; it's added automatically.
 >From this point on, we'll show only the lines of code that go *inside* the `main()` function. So whenever you see example code, just imagine it's being placed inside `function main(workbook: ExcelScript.Workbook) { ... }`.
 

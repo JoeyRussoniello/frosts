@@ -82,7 +82,7 @@ A convenience alias used throughout Frosts to represent valid DataFrame cell val
 type CellValue = string | number | boolean;
 ```
 
-This type ensures compatibility with ExcelScript data and simplifies custom function signatures, so you don’t need to repeatedly write out union types like string | number | boolean. Use `fr.CellValue` your own functions, and utilities for clean, readable code [See Example Here]().
+This type ensures compatibility with ExcelScript data and simplifies custom function signatures, so you don’t need to repeatedly write the union type `string | number | boolean`, the default type for `ExcelScript.Range.getValue()`. Use `fr.CellValue` write your own functions, and utilities for clean, readable code [See Example Here](#example-2-returning-a-cellvalue-per-row).
 
 ### `Row`
 
@@ -163,7 +163,6 @@ console.log(df.types);
 
 ## Reserved Separator Warning
 
-{: .warning }
 Frosts uses an internal **separator string** for grouping, reshaping, and joins. If a column name includes this separator, it will cause downstream errors.
 
 - Default value: `~~~`
@@ -201,11 +200,11 @@ Use `.rename()` to manually fix column names post-loading.
 
 ---
 
-### Writing Custom Functions with Frost Data Types
+## Writing Custom Functions with Frost Data Types
 
 Below are advanced, real-world patterns that demonstrate how `fr.DataFrame`, `fr.FrostRow`, and `fr.CellValue` work together to streamline column creation, condition filtering, and numeric mapping.
 
-#### Example 1: Generating a Numeric Column with `.apply()`
+### Example 1: Generating a Numeric Column with `.apply()`
 
 ```ts
 function calcOverages(df: fr.DataFrame, limit: number): fr.DataFrame {
@@ -216,7 +215,7 @@ function calcOverages(df: fr.DataFrame, limit: number): fr.DataFrame {
 
 This takes a usage column and computes overages above a specified limit, returning a new DataFrame with an "Overage (GB)" column.
 
-#### Example 2: Returning a CellValue[] Per Row
+### Example 2: Returning a CellValue[] Per Row
 
 You can also return arrays of values, useful for deconstructing rows or generating wide output.
 
@@ -251,9 +250,3 @@ See more complete examples and real world applications in the [examples section]
 ## Learn More
 
 Explore the full API:
-
-- [Basic Operations](df_methods/basic_operations.md)
-- [Filtering](df_methods/filtering.md)
-- [Aggregations](df_methods/aggregation.md)
-- [Merging](df_methods/merging.md)
-- [Export/Import](df_methods/outputs.md)
