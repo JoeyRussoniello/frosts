@@ -161,15 +161,15 @@ namespace fr {
         });
     }
 
-    export function toExcelDate(jsDate: Date, include_time:boolean = true): number {
+    export function toExcelDate(jsDate: Date, include_time: boolean = true): number {
         const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Excel's "zero" date
         const diffInMs = jsDate.getTime() - excelEpoch.getTime();
         const excelSerialDate = diffInMs / (1000 * 60 * 60 * 24);
 
-        if (include_time){
+        if (include_time) {
             return excelSerialDate
         }
-        else{
+        else {
             return Math.floor(excelSerialDate);
         }
     }
@@ -220,8 +220,8 @@ namespace fr {
         includes: (substring: string): BooleanPredicate => (v) => v.toString().includes(substring),
         starts_with: (target: string): BooleanPredicate => (v) => {
             let value = v != null ? v.toString() : "";
-            if (value.length < target.length){return false}
-            return value.slice(0,target.length) == target;
+            if (value.length < target.length) { return false }
+            return value.slice(0, target.length) == target;
         },
         ends_with: (target: string): BooleanPredicate => (v) => {
             let value = v != null ? v.toString() : "";
@@ -348,13 +348,13 @@ namespace fr {
             return output;
         }
 
-        replace_column(columnName: string, fn: (value: CellValue, index?: number) => CellValue, inplace:boolean = false):DataFrame{
+        replace_column(columnName: string, fn: (value: CellValue, index?: number) => CellValue, inplace: boolean = false): DataFrame {
             this.__check_membership(columnName);
-            let corrected_vals = this.get_column(columnName).map((v, i) => fn(v,i))
-            return this.set_column(columnName,corrected_vals,inplace);
+            let corrected_vals = this.get_column(columnName).map((v, i) => fn(v, i))
+            return this.set_column(columnName, corrected_vals, inplace);
         }
 
-        has_column(columnName:string):boolean{
+        has_column(columnName: string): boolean {
             return this.__headers.has(columnName);
         }
 
@@ -686,8 +686,8 @@ namespace fr {
             return this.columns.filter(col => this.dtypes[col] === "number");
         }
 
-        describe(...columns:string[]): DataFrame {
-            const numericCols = columns.length > 0 ? columns: this.getNumericColumns();
+        describe(...columns: string[]): DataFrame {
+            const numericCols = columns.length > 0 ? columns : this.getNumericColumns();
 
             const stats = [
                 "Count",
@@ -747,7 +747,7 @@ namespace fr {
             ]);
         }
 
-        
+
         /**
      * Groups the DataFrame by one or more key columns and applies aggregations to specified value columns.
      *
@@ -777,10 +777,10 @@ namespace fr {
                 let operations = aggregations[col];
                 let ops: Operation[];
 
-                if (typeof(operations) == "string"){
-                    ops=[operations]
+                if (typeof (operations) == "string") {
+                    ops = [operations]
                 }
-                else{
+                else {
                     ops = operations;
                 }
 
@@ -847,9 +847,9 @@ namespace fr {
 
 
 
-        query(condition: (row: Row) => boolean): DataFrame {
+        query(condition: (row: FrostRow) => boolean): DataFrame {
             // Filter rows based on the provided condition function
-            const filteredValues = this.values.filter(row => condition(row));
+            const filteredValues = this.values.filter(row => condition(toFrostRow(row)));
 
             // Convert filtered values into the DataFrame format
             const resultData = [this.columns, ...filteredValues.map(row =>
@@ -883,35 +883,30 @@ namespace fr {
             return this.__set_membership(column, values, false);
         }
 
-        sortBy(columns: string[], ascending: boolean[] = [], inplace: boolean = false): DataFrame {
-            // Ensure all columns exist in the DataFrame
-            columns.forEach(col => this.__check_membership(col));
+        sortBy(sortSpec: { [column: string]: boolean }, inplace: boolean = false): DataFrame {
+            const columns = Object.keys(sortSpec);
+            const directions = columns.map(col => {
+                this.__check_membership(col);
+                return sortSpec[col] ? 1 : -1;
+            });
 
-            // If only one sorting direction is provided, apply it to all columns
-            if (ascending.length === 1) {
-                ascending = Array(columns.length).fill(ascending[0]);
-            }
-
-            // Sort rows based on columns and their corresponding sort order (ascending or descending)
             const sortedRows = [...this.values].sort((rowA, rowB) => {
                 for (let i = 0; i < columns.length; i++) {
                     const col = columns[i];
-                    const direction = ascending[i] ? 1 : -1;
-                    if (rowA[col] < rowB[col]) return -direction;
-                    if (rowA[col] > rowB[col]) return direction;
+                    const dir = directions[i];
+                    if (rowA[col] < rowB[col]) return -dir;
+                    if (rowA[col] > rowB[col]) return dir;
                 }
                 return 0;
             });
 
-            // Rebuild the data array for the new sorted DataFrame
             const dataArray = [
                 this.columns,
                 ...sortedRows.map(row => this.columns.map(col => row[col]))
             ];
 
-            let output = new DataFrame(dataArray);
-
-            this.__assign_inplace(output, inplace)
+            const output = new DataFrame(dataArray);
+            this.__assign_inplace(output, inplace);
             return output;
         }
 
@@ -1370,15 +1365,15 @@ namespace fr {
             let not_in_key = left_values.filter(v => !right_values.has(v));
 
             if (not_in_key.length == 0) {
-                if (errors == 'raise'){
+                if (errors == 'raise') {
                     throw new Error(`KeyIncompleteError: The following values were not found in the selected key\n[${not_in_key.join(',')}]`);
                 }
-                else if (errors == "warn"){
+                else if (errors == "warn") {
                     console.log(`⚠️  validate_key(): ${not_in_key.length} unmatched value(s) in column "${left_on}" that were not found in key column "${right_on}":\n` +
                         `   → ${not_in_key.slice(0, 10).join(", ")}${not_in_key.length > 10 ? ", ..." : ""}`);
                 }
             }
-            
+
             return not_in_key
         }
 
@@ -1467,7 +1462,7 @@ namespace fr {
 
             let grouped = this.groupBy(
                 [index, columns],
-                {[values]: aggFunc}
+                { [values]: aggFunc }
             );
 
             //Get unique row and columns
@@ -1504,17 +1499,23 @@ namespace fr {
          * @param keepHeaders - Boolean on whether you'd like to keep the rows flagged as headers in the output DataFrame.
          * @returns A new DataFrame with the header values encoded in the new column
          */
-        encode_headers(columnName: string, isHeaderRow: (row: Row) => boolean, extractValue: (row: Row) => CellValue, keepHeaders: boolean = false): DataFrame {
+        encode_headers(
+            columnName: string,
+            isHeaderRow: (row: FrostRow) => boolean,
+            extractValue: (row: FrostRow) => CellValue,
+            keepHeaders: boolean = false
+        ): DataFrame {
             let current_header: CellValue = "";
-            let series = this.values.map(row => {
+
+            const series = this.apply(row => {
                 if (isHeaderRow(row)) {
                     current_header = extractValue(row);
                 }
                 return current_header;
-            })
+            });
 
-            let output = this.set_column(columnName, series, false);
-            //If keepHeaders = false, remove headerRows from the output
+            const output = this.set_column(columnName, series, false);
+
             return keepHeaders ? output : output.query(row => !isHeaderRow(row));
         }
 
@@ -1531,7 +1532,7 @@ namespace fr {
     }
 }
 
-function main(workbook: ExcelScript.Workbook) {
+function main(workbook: ExcelScript.Workbook){
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
     // YOUR CODE GOES HERE
     
