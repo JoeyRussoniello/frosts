@@ -1,14 +1,24 @@
 namespace fr {
-    //DEFAULT SEPARATOR FOR MULTIPLE JOINS
     let SEPARATOR = "~~~";
-    //ABSTRACT DEV SHEET NAME FOR FORMULA HARDCODING
     const DEV_SHEET_NAME = "___DEV_SHEET_NULL#859132";
-    //SAMPLE SIZE FOR TYPE CHECKING
     const TYPE_DETECTION_SAMPLE_SIZE = 100;
 
+    /**
+     * Returns a current column separator string used internally by the framework
+     * for operations like joins and reshaping.
+     *
+     * @returns {string} The current column separator.
+     */
     export function get_separator(): string {
         return SEPARATOR;
     }
+
+    /**
+     * Sets a new internal column separator string to be used in operations such as joins
+     * and reshaping. Avoid using characters that might conflict with actual column names.
+     *
+     * @param {string} separator - The string to use as the new column separator.
+     */
     export function set_separator(separator: string) {
         SEPARATOR = separator;
     }
@@ -53,7 +63,6 @@ namespace fr {
         //If the number of types spotted ins't 1, just coerce values to string
         return uniqueTypes.length === 1 ? uniqueTypes[0] : "string";
     }
-
     function parseValue(input: CellValue, parse_method: ("string" | "number" | "boolean")): CellValue {
         switch (parse_method) {
             case "string": return input.toString();
@@ -62,9 +71,24 @@ namespace fr {
             default: throw SyntaxError("Error parsing value: parsing method must be either 'string','boolean',or 'number'");
         }
     }
+    /**
+     * Creates a new `DataFrame` from an ExcelScript range object.
+     * The first row of the range is interpreted as column headers.
+     *
+     * @param {ExcelScript.Range} range - The Excel range containing the table data.
+     * @returns {DataFrame} A new `DataFrame` initialized with the range values.
+     */
     export function read_range(range: ExcelScript.Range): DataFrame {
         return new DataFrame(range.getValues());
     }
+    /**
+     * Creates a `DataFrame` from the used range of a worksheet.
+     * The first row of the range is treated as the column headers.
+     *
+     * @param {ExcelScript.Worksheet} Sheet - The worksheet to read from.
+     * @returns {DataFrame} A new `DataFrame` containing the sheet's used range.
+     * @throws Will throw an error if the worksheet is empty.
+     */
     export function read_sheet(Sheet: ExcelScript.Worksheet): DataFrame {
         let rng = Sheet.getUsedRange();
         if (!rng) {
@@ -72,18 +96,32 @@ namespace fr {
         }
         return read_range(rng);
     }
-
+    /**
+     * Parses a JSON string and returns a new `DataFrame`.
+     * The JSON must represent a 2D array with the first row as column headers.
+     *
+     * @param {string} json - A stringified JSON array of arrays representing tabular data.
+     * @returns {DataFrame} A new `DataFrame` initialized from the parsed JSON data.
+     * @throws Will throw an error if the JSON is invalid or not in expected format.
+     */
     export function read_json(json: string): DataFrame {
         /* Parse an input JSON-coded string to create a DataFrame*/
         return new DataFrame(JSON.parse(json))
     }
-
+    /**
+     * Creates a `DataFrame` from a worksheet range that begins after skipping a specified
+     * number of rows and columns. The first row of the resulting range is treated as headers.
+     *
+     * @param {ExcelScript.Worksheet} Sheet - The worksheet to read from.
+     * @param {number} n_rows - Number of rows to skip from the top.
+     * @param {number} n_cols - Number of columns to skip from the left.
+     * @returns {DataFrame} A new `DataFrame` starting at the specified offset.
+     */
     export function read_after(Sheet: ExcelScript.Worksheet, n_rows: number, n_cols: number) {
         let rng = Sheet.getUsedRange();
         let new_rng = rng.getOffsetRange(n_rows, n_cols).getUsedRange();
         return read_range(new_rng);
     }
-
     //Helper function for CSV parsing Fixes occurences like "1,024"
     function remove_chars_within_quotes(longtext: string): string {
         //Removes line breaks and commas within quotes using a stack, runs in O(n) space and memory
@@ -116,7 +154,19 @@ namespace fr {
         }
         return newstring
     }
-
+    /**
+     * Parses a raw CSV-formatted string and returns a new `DataFrame`.
+     * Allows optional error handling and slicing from a specific starting row.
+     *
+     * @param {string} input_text - The CSV text to parse. Fields are expected to be comma-separated.
+     * @param {"raise" | "coerce"} [errors="raise"] - Determines how to handle inconsistent row lengths:
+     *   - `"raise"` throws an error if rows have unequal columns.
+     *   - `"coerce"` fills shorter rows with empty strings.
+     * @param {number} [start_index=0] - Row index to begin parsing from (useful to skip metadata).
+     * @param {string} [line_separator="\n"] - Line delimiter to split rows (defaults to newline).
+     * @returns {DataFrame} A new `DataFrame` created from the parsed CSV content.
+     * @throws Will throw a `TypeError` if row lengths are inconsistent and `errors` is set to `"raise"`.
+     */
     export function read_csv(input_text: string, errors: ("raise" | "coerce") = "raise", start_index: number = 0, line_separator: string = "\n"): DataFrame {
         let cleaned_text = remove_chars_within_quotes(input_text);
         let line_split_arr: string[] = [];
@@ -151,7 +201,13 @@ namespace fr {
         });
         return new DataFrame(output.slice(start_index));
     }
-
+    /**
+     * Converts an array of cell values to an array of numbers using `parseFloat`.
+     * Non-numeric or null values are converted to `NaN`.
+     *
+     * @param {CellValue[]} column - An array of values (strings, numbers, or nulls) to convert.
+     * @returns {number[]} A numeric array with each value parsed as a float, or `NaN` if conversion fails.
+     */
     export function to_numeric(column: CellValue[]): number[] {
         return column.map(row => {
             if (row == null) {
@@ -160,7 +216,14 @@ namespace fr {
             return parseFloat(row.toString())
         });
     }
-
+    /**
+     * Converts a JavaScript `Date` object into an Excel serial date number.
+     * Optionally includes the time portion as a fractional day.
+     *
+     * @param {Date} jsDate - The JavaScript date to convert.
+     * @param {boolean} [include_time=true] - Whether to include the time portion as a fraction.
+     * @returns {number} The Excel serial date corresponding to the given `Date`.
+     */
     export function toExcelDate(jsDate: Date, include_time: boolean = true): number {
         const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Excel's "zero" date
         const diffInMs = jsDate.getTime() - excelEpoch.getTime();
@@ -174,8 +237,40 @@ namespace fr {
         }
     }
 
+    /**
+     * Converts an Excel serial date number into a JavaScript `Date` object.
+     * Handles both whole dates and fractional time components.
+     *
+     * @param {number} excelSerial - The Excel serial date number to convert.
+     * @returns {Date} A JavaScript `Date` object representing the Excel date.
+     */
+    export function toJsDate(excelSerial: number): Date {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30)); // Excel's "zero" date
+        const msPerDay = 24 * 60 * 60 * 1000;
+        return new Date(excelEpoch.getTime() + excelSerial * msPerDay);
+    }
+
+    /**
+     * The current date as an Excel serial number, excluding the time component.
+     * Equivalent to `=TODAY()` in Excel.
+     *
+     * @constant
+     * @type {number}
+     */
     export const today = toExcelDate(new Date(), false);
 
+    /**
+     * Combines multiple `DataFrame` objects into a single `DataFrame`, aligning columns
+     * based on the selected strategy.
+     *
+     * @param {DataFrame[]} dfs - An array of `DataFrame` instances to concatenate.
+     * @param {"inner" | "outer" | "left"} [columnSelection="outer"] - Column alignment strategy:
+     *   - `"inner"`: Keep only columns common to all DataFrames.
+     *   - `"outer"`: Include all columns across all DataFrames (default).
+     *   - `"left"`: Use only columns from the first DataFrame.
+     * @returns {DataFrame} A new `DataFrame` resulting from the concatenation.
+     * @throws {RangeError} If the input array is empty.
+     */
     export function combine_dfs(dfs: DataFrame[], columnSelection: ("inner" | "outer" | "left") = "outer"): DataFrame {
         if (dfs.length == 0) {
             throw RangeError("Please input at least 1 DataFrame to use combine_dfs()")
@@ -211,12 +306,23 @@ namespace fr {
         return nums.reduce((acc, x) => acc * x, 1);
     }
 
-    export type BooleanPredicate = (v: CellValue) => boolean;
+    type BooleanPredicate = (v: CellValue) => boolean;
+
 
     export const predicates = {
         is_blank: (v: CellValue) => v == "",
         is_nan: (v: CellValue) => isNaN(Number(v)),
+        /**
+         * Returns a predicate that checks if a value is equal to the given target.
+         * @param {CellValue} target - The value to compare against.
+         * @returns {(v: CellValue) => boolean}
+         */
         equal: (target: CellValue): BooleanPredicate => (v) => v == target,
+        /**
+         * Returns a predicate that checks if a stringified value includes a given substring.
+         * @param {string} substring - The substring to search for.
+         * @returns {(v: CellValue) => boolean}
+         */
         includes: (substring: string): BooleanPredicate => (v) => v.toString().includes(substring),
         starts_with: (target: string): BooleanPredicate => (v) => {
             let value = v != null ? v.toString() : "";
@@ -230,6 +336,13 @@ namespace fr {
         }
     };
 
+    /**
+     * Returns the logical negation of a given predicate function.
+     * Useful for inverting filter conditions.
+     *
+     * @param {BooleanPredicate} predicate - The predicate to negate.
+     * @returns {BooleanPredicate} A new predicate that returns `true` when the original returns `false`.
+     */
     export const not = (predicate: BooleanPredicate): BooleanPredicate => (v) => !predicate(v);
 
 
@@ -237,10 +350,23 @@ namespace fr {
         return Object.values(row);
     }
 
-    export type CellValue = string | number | boolean; //Improve type clarity
-    export type Row = { [key: string]: CellValue }; //Loose Row Type for General Handling
+    /**
+     * Represents a single cell value in the DataFrame.
+     * Can be a string, number, or boolean.
+     */
+    export type CellValue = string | number | boolean;
+
+    /**
+     * A loose representation of a row in the DataFrame,
+     * where each key corresponds to a column name and each value is a cell.
+     */
+    export type Row = { [key: string]: CellValue };
     export type Operation = ("sum" | "mean" | "count" | "min" | "max" | "std_dev");
-    //Strict Row Type For Access in iterrows() and filter9)
+
+    /**
+     * Represents a single row with type-safe accessors for values by column name.
+     * Provides convenience methods for retrieving typed values and accessing raw data.
+     */
     export interface FrostRow {
         get(key: string): CellValue;
         get_number(key: string): number;
@@ -250,7 +376,7 @@ namespace fr {
         raw: Row; // in case user wants to fallback
     }
 
-    //Wrap a Row as a FrostRow
+    //Wrap a Row as a FrostRow. Used Internally
     function toFrostRow(row: Row): FrostRow {
         return {
             get: (key) => row[key],
@@ -277,7 +403,10 @@ namespace fr {
         };
     }
 
-
+    /**
+     * A lightweight tabular data structure inspired by pandas, designed for ExcelScript.
+     * Stores rows as objects with column-based access, along with metadata for structure and types.
+     */
 
     export class DataFrame {
         columns: string[]
@@ -285,6 +414,14 @@ namespace fr {
         dtypes: { [key: string]: ("string" | "number" | "boolean") }
         values: Row[];
 
+        /**
+         * Creates a new `DataFrame` from a 2D array of values.
+         * The first row is interpreted as column headers (which will be trimmed and deduplicated if necessary).
+         * Remaining rows are parsed as data entries with automatic type inference per column.
+         *
+         * @param {CellValue[][]} data - A 2D array where the first row contains headers, and remaining rows are data.
+         * @throws Will throw if input is malformed.
+         */
         constructor(data: CellValue[][]) {
             let str_data = data as string[][];
             let headers = str_data[0].map(s => s.trim()); //Trim all headers
@@ -325,8 +462,17 @@ namespace fr {
             if (inplace) {
                 this.__assign_properties(...other.__extract_properties());
             }
-        }
+        };
 
+        /**
+         * Adds or replaces a column in the `DataFrame` with the provided values.
+         *
+         * @param {string} columnName - The name of the column to add or overwrite.
+         * @param {CellValue[]} values - An array of values to assign to the column. Must match the number of rows.
+         * @param {boolean} [inplace=false] - Whether to update the DataFrame in place.
+         * @returns {DataFrame} A new `DataFrame` with the updated column, or the modified instance if `inplace` is `true`.
+         * @throws {RangeError} If the number of input values does not match the number of rows in the DataFrame.
+         */
         set_column(columnName: string, values: CellValue[], inplace: boolean = false): DataFrame {
             if (this.values.length != values.length) {
                 throw new RangeError(`DataFrame and Input Dimensions Don't Match\nDataFrame has ${this.values.length} rows, while input values have ${values.length}`);
@@ -346,20 +492,40 @@ namespace fr {
 
             this.__assign_inplace(output, inplace);
             return output;
-        }
+        };
 
+        /**
+         * Replaces the values of an existing column using a transformation function.
+         *
+         * @param {string} columnName - The name of the column to update.
+         * @param {(value: CellValue, index?: number) => CellValue} fn - A function that maps each cell to a new value.
+         * @param {boolean} [inplace=false] - Whether to modify the `DataFrame` in place.
+         * @returns {DataFrame} A new `DataFrame` with the transformed column, or the modified instance if `inplace` is `true`.
+         * @throws {Error} If the specified column does not exist.
+         */
         replace_column(columnName: string, fn: (value: CellValue, index?: number) => CellValue, inplace: boolean = false): DataFrame {
             this.__check_membership(columnName);
             let corrected_vals = this.get_column(columnName).map((v, i) => fn(v, i))
             return this.set_column(columnName, corrected_vals, inplace);
         }
 
+        /**
+         * Checks if the column exists in the `DataFrame`.
+         *
+         * @param {string} columnName - The column to check.
+         * @returns {boolean} `true` if the column exists, otherwise `false`.
+         */
         has_column(columnName: string): boolean {
             return this.__headers.has(columnName);
         }
 
+        /**
+         * Converts the `DataFrame` to a 2D array of values.
+         *
+         * @param {boolean} [headers=true] - Whether to include the column headers as the first row.
+         * @returns {CellValue[][]} The data as a 2D array.
+         */
         to_array(headers: boolean = true): CellValue[][] {
-            /* Convert the values of the df into a 2D string|number|boolean array */
             if (headers) {
                 return [this.columns, ...this.values.map(row => Object.values(row))];
             }
@@ -391,6 +557,7 @@ namespace fr {
             // Get all of the developer properties of the DataFrame
             return [this.columns, this.dtypes, this.values];
         }
+
         private __assign_properties(columns: string[], dtypes: { [key: string]: ("string" | "number" | "boolean") }, values: Row[]) {
             /* Manually overwrite all of the properties of the DataFrame */
             this.columns = columns;
@@ -399,6 +566,16 @@ namespace fr {
             this.__headers = new Set(columns);
         }
 
+        /**
+         * Concatenates this `DataFrame` with another, aligning columns based on the selected strategy.
+         *
+         * @param {DataFrame} other - The DataFrame to append below the current one.
+         * @param {"inner" | "outer" | "left"} [columnSelection="outer"] - Column alignment strategy:
+         *   - `"inner"`: Use only columns common to both DataFrames.
+         *   - `"outer"`: Include all columns from both DataFrames.
+         *   - `"left"`: Use only columns from the current DataFrame.
+         * @returns {DataFrame} A new `DataFrame` with the combined rows.
+         */
         concat(other: DataFrame, columnSelection: ("inner" | "outer" | "left") = "outer"): DataFrame {
             let other_cols = other.columns;
 
@@ -500,52 +677,35 @@ namespace fr {
             return new DataFrame(dataMatrix);
         }
 
-
-        add_column(columnName: string, values: CellValue[] | CellValue, inplace: boolean = false): DataFrame {
-            let new_df = this.copy();
-
-            let inp_values: CellValue[];
-            if (Array.isArray(values)) {
-                if (values.length != this.values.length) {
-                    throw RangeError(`Length Mismatch:\nSize of ${columnName} - ${values.length}\nSize of df ${this.values.length}`);
-                }
-                inp_values = values;
-            }
-            else {
-                inp_values = Array(this.values.length).fill(values);
-            }
-
-            let old_size = new_df.__headers.size;
-            new_df.__headers.add(columnName)
-
-            if (new_df.__headers.size == old_size) {
-                throw RangeError(`Key "${columnName}" already in df`);
-            }
-            new_df.columns.push(columnName);
-            let dtype = detectColumn(inp_values as string[]);
-            new_df.dtypes[columnName] = dtype;
-
-            new_df.values.forEach((row, index) => {
-                row[columnName] = inp_values[index]
-            });
-
-            this.__assign_inplace(new_df, inplace);
-            return new_df;
-        }
-
+        /**
+         * Returns a deep copy of the DataFrame.
+         */
         copy(): DataFrame {
             // Use JSON to force a deep copy
             return new DataFrame(JSON.parse(JSON.stringify(this.to_array())));
         }
+
+        /**
+         * Returns the dimensions of the DataFrame as [rows, columns].
+         */
         shape(): [number, number] {
             return [this.values.length, this.columns.length]
         }
 
+        /**
+         * Returns all values from the specified column.
+         *
+         * @param {string} key - The column name.
+         */
         get_column(key: string): CellValue[] {
             this.__check_membership(key);
             return this.values.map(row => row[key]);
         }
-
+        /**
+         * Returns a new `DataFrame` containing only the specified columns.
+         *
+         * @param {...string[]} keys - Column names to extract.
+         */
         get_columns(...keys: string[]): DataFrame {
             //Check that all keys are present in the df
             keys.forEach(key => this.__check_membership(key));
@@ -556,7 +716,11 @@ namespace fr {
 
             return new DataFrame([keys, ...values]);
         }
-
+        /**
+         * Returns a new `DataFrame` without the specified columns.
+         *
+         * @param {...string[]} columnsToDrop - Columns to remove.
+         */
         drop(...columnsToDrop: string[]): DataFrame {
             // Ensure all columns exist before proceeding
             columnsToDrop.forEach(col => this.__check_membership(col));
@@ -578,6 +742,17 @@ namespace fr {
             return new DataFrame(resultData);
         }
 
+        /**
+         * Filters the `DataFrame` by applying a predicate function to a specific column.
+         * Only rows where the predicate returns `true` are retained.
+         *
+         * @param {string} key - The column to apply the filter on.
+         * @param {(value: CellValue) => boolean} predicate - A function that determines if a row should be kept.
+         * @param {boolean} [inplace=false] - Whether to modify the current `DataFrame` in place.
+         * @returns {DataFrame} A new `DataFrame` containing only the rows that match the condition,
+         *                      or the modified instance if `inplace` is `true`.
+         * @throws Will throw an error if the specified column does not exist.
+         */
         filter(key: string, predicate: (value: CellValue) => boolean, inplace: boolean = false): DataFrame {
             // Check if the key exists in the dataframe
             this.__check_membership(key);
@@ -662,6 +837,14 @@ namespace fr {
             return this.quantile(column, 50);
         }
 
+        /**
+         * Returns a new `DataFrame` containing the unique combinations of values
+         * from the specified columns, preserving order of first appearance.
+         *
+         * @param {...string[]} columns - Columns to use when identifying unique rows.
+         * @returns {DataFrame} A new `DataFrame` with one row per unique value combination.
+         * @throws Will throw an error if any specified column does not exist.
+         */
         unique(...columns: string[]): DataFrame {
             columns.forEach(c => this.__check_membership(c));
 
@@ -686,6 +869,16 @@ namespace fr {
             return this.columns.filter(col => this.dtypes[col] === "number");
         }
 
+        /**
+         * Generates a statistical summary for the specified numeric columns.
+         * If no columns are specified, all numeric columns in the `DataFrame` are used.
+         *
+         * Summary includes: Count, Mean, Standard Deviation, Min, 1st Quartile,
+         * Median, 3rd Quartile, and Max.
+         *
+         * @param {...string[]} columns - Optional list of numeric columns to summarize.
+         * @returns {DataFrame} A new `DataFrame` with one row per column and one column per summary statistic.
+         */
         describe(...columns: string[]): DataFrame {
             const numericCols = columns.length > 0 ? columns : this.getNumericColumns();
 
@@ -747,17 +940,16 @@ namespace fr {
             ]);
         }
 
-
         /**
-     * Groups the DataFrame by one or more key columns and applies aggregations to specified value columns.
-     *
-     * @param group_keys - Column(s) to group by.
-     * @param aggregations - An object mapping each value column to one or more aggregation operations.
-     *
-     * Supported operations: "sum", "mean", "count", "min", "max", "std_dev"
-     *
-     * @returns A new DataFrame with aggregated results.
-     */
+         * Groups the DataFrame by one or more key columns and applies aggregations to specified value columns.
+         *
+         * @param group_keys - Column(s) to group by.
+         * @param aggregations - An object mapping each value column to one or more aggregation operations.
+         *
+         * Supported operations: "sum", "mean", "count", "min", "max", "std_dev"
+         *
+         * @returns A new DataFrame with aggregated results.
+         */
         groupBy(
             group_keys: string[] | string,
             aggregations: { [col: string]: Operation | Operation[] }
@@ -845,8 +1037,13 @@ namespace fr {
             return new DataFrame([resultHeaders, ...resultRows]);
         }
 
-
-
+        /**
+         * Filters the `DataFrame` using a custom condition applied to each row.
+         * Rows are passed to the condition as `FrostRow` objects for typed, column-based access.
+         *
+         * @param {(row: FrostRow) => boolean} condition - A function that returns `true` for rows to keep.
+         * @returns {DataFrame} A new `DataFrame` with only the rows that satisfy the condition.
+         */
         query(condition: (row: FrostRow) => boolean): DataFrame {
             // Filter rows based on the provided condition function
             const filteredValues = this.values.filter(row => condition(toFrostRow(row)));
@@ -876,13 +1073,28 @@ namespace fr {
             return new DataFrame(dataArray);
         }
 
+        /**
+         * Keeps rows where the column value is in the values set.
+         */
         is_in(column: string, values: Set<CellValue>): DataFrame {
             return this.__set_membership(column, values, true);
         }
+
+        /**
+         * Keeps rows where the column value is not in the values set.
+         */
         isnt_in(column: string, values: Set<CellValue>): DataFrame {
             return this.__set_membership(column, values, false);
         }
 
+        /**
+         * Sorts the `DataFrame` by one or more columns.
+         *
+         * @param {{ [column: string]: boolean }} sortSpec - Keys are column names; values indicate ascending (`true`) or descending (`false`).
+         * @param {boolean} [inplace=false] - Whether to apply the sort in place.
+         * @returns {DataFrame} A new sorted `DataFrame`, or the modified instance if `inplace` is `true`.
+         * @throws Will throw if any specified column does not exist.
+         */
         sortBy(sortSpec: { [column: string]: boolean }, inplace: boolean = false): DataFrame {
             const columns = Object.keys(sortSpec);
             const directions = columns.map(col => {
@@ -910,6 +1122,19 @@ namespace fr {
             return output;
         }
 
+        /**
+         * Merges this `DataFrame` with another based on shared key columns.
+         * Supports `inner`, `left`, and `outer` joins.
+         *
+         * @param {DataFrame} other - The DataFrame to join with.
+         * @param {string[]} on - Columns to join on. Must exist in both DataFrames.
+         * @param {"inner" | "left" | "outer"} [how="inner"] - Join type:
+         *   - `"inner"`: Only rows with matching keys in both DataFrames.
+         *   - `"left"`: All rows from this DataFrame, matched with the other.
+         *   - `"outer"`: All rows from both DataFrames, matched where possible.
+         * @returns {DataFrame} A new `DataFrame` containing the joined result.
+         * @throws Will throw if any join column does not exist in either DataFrame.
+         */
         merge(other: DataFrame, on: string[], how: "inner" | "left" | "outer" = "inner"): DataFrame {
             // Ensure columns to join on exist in both DataFrames
             on.forEach(col => {
@@ -979,14 +1204,30 @@ namespace fr {
             return new DataFrame(dataArray);
         }
 
+        /**
+         * Returns an array of `[row, index]` pairs for iteration.
+         * Useful for applying logic row-by-row with access to the row's position.
+         */
         iterrows(): [Row, number][] {
             return this.values.map((row, idx) => [row, idx]);
         }
 
+        /**
+         * Converts the DataFrame to a JSON string.
+         * Includes headers as the first row if `headers` is true (default).
+         */
         to_json(headers: boolean = true): string {
             return JSON.stringify(this.to_array(headers));
         }
 
+        /**
+         * Renames one or more columns in the `DataFrame` using a mapping of old to new names.
+         *
+         * @param {{ [oldName: string]: string }} columnsMap - A mapping from existing column names to new names.
+         * @param {boolean} [inplace=false] - Whether to modify the DataFrame in place.
+         * @returns {DataFrame} A new `DataFrame` with updated column names, or the modified instance if `inplace` is `true`.
+         * @throws Will throw if any column in the map does not exist.
+         */
         rename(columnsMap: { [oldName: string]: string }, inplace: boolean = false): DataFrame {
             // Make sure all keys in columnsMap exist in the DataFrame
             for (let oldCol in columnsMap) {
@@ -1003,33 +1244,8 @@ namespace fr {
             this.__assign_inplace(output, inplace)
             return output
         }
-
-        /**
-         * Adds a new column filled with the same Excel formula across all rows.
-         * This is useful for injecting dynamic calculations like dates, text parsing, or math operations,
-         * and is especially helpful when used before calling `.hardcode_formulas()` to evaluate them.
-         *
-         * **Important:** Formulas must use **structured table references** (e.g., `[@ColumnName]`),
-         * not standard A1 cell references. For example:
-         * 
-         * - `=YEAR([@Date])`
-         * - `=CONCATENATE([@First Name], " ", [@Last Name])`
-         * - `=IF([@Bonus] > 1000, "Yes", "No")`
-         *
-         * @param columnName - Name of the new column to be added.
-         * @param formula - Excel-style formula string (starting with `=`) using structured references.
-         * @param inplace - If true, modifies the current DataFrame. Otherwise, returns a new one. Default is false.
-         * 
-         * @returns The updated DataFrame (new or modified in-place).
-         */
-        add_formula_column(columnName: string, formula: string, inplace: boolean = false): DataFrame {
-            /* Append a table-style formula column
-            Example: [@Col1] + [@Col2]
-            */
-            let formula_col: string[] = Array(this.shape()[0]).fill(formula);
-            return this.add_column(columnName, formula_col, inplace);
-        }
-
+        
+        
         fill_na(columnName: (string | string[] | "ALL"), method: ("prev" | "next" | "value"), value?: CellValue): DataFrame {
             if (typeof columnName != "string" || columnName == "ALL") {
                 let columns: string[];
@@ -1100,7 +1316,30 @@ namespace fr {
                 return df;
             }
         }
+        /**
+         * Adds a new column filled with the same Excel formula across all rows.
+         * This is useful for injecting dynamic calculations like dates, text parsing, or math operations,
+         * and is especially helpful when used before calling `.hardcode_formulas()` to evaluate them.
+         *
+         * **Important:** Formulas must use **structured table references** (e.g., `[@ColumnName]`),
+         * not standard A1 cell references. For example:
+         * 
+         * - `=YEAR([@Date])`
+         * - `=CONCATENATE([@First Name], " ", [@Last Name])`
+         * - `=IF([@Bonus] > 1000, "Yes", "No")`
+         *
+         * @param columnName - Name of the new column to be added.
+         * @param formula - Excel-style formula string (starting with `=`) using structured references.
+         * @param inplace - If true, modifies the current DataFrame. Otherwise, returns a new one. Default is false.
+         * 
+         * @returns The updated DataFrame (new or modified in-place).
+         */
+        add_formula_column(columnName: string, formula: string, inplace: boolean = false): DataFrame {
+            let formula_col: string[] = Array(this.shape()[0]).fill(formula);
+            return this.set_column(columnName, formula_col, inplace);
+        }
 
+        
         to_worksheet(worksheet: ExcelScript.Worksheet, method: ("o" | "a") = "o") {
             //Include headers only when overwriting
             let export_array: CellValue[][] = this.to_array(method == "o");
@@ -1151,7 +1390,7 @@ namespace fr {
             }
             //*/
         }
-
+        
         hardcode_formulas(workbook: ExcelScript.Workbook, inplace: boolean = true): DataFrame {
             /*
               Calculate and Hardcode all formula results in the input df. 
@@ -1174,10 +1413,21 @@ namespace fr {
             return calculated_df
         }
 
+        /**
+         * Converts the DataFrame to a CSV string.
+         * Optionally includes headers and custom separator.
+         */
         to_csv(headers: boolean = true, separator: string = ","): string {
             return this.to_array(headers).map(row => row.join(separator)).join("\n");
         }
 
+        /**
+         * Converts columns into row entries for long-format reshaping.
+         *
+         * @param newColumnName - Name for the column holding former column names.
+         * @param newValueName - Name for the column holding values.
+         * @param columns - Columns to unpivot.
+         */
         melt(newColumnName: string, newValueName: string, ...columns: string[]): DataFrame {
             columns.forEach(col => this.__check_membership(col));
 
@@ -1196,6 +1446,13 @@ namespace fr {
             return new DataFrame(output_values);
         }
 
+        /**
+         * Like `melt`, but unpivots all columns except the specified ones.
+         *
+         * @param newColumnName - Name for the column holding former column names.
+         * @param newValueName - Name for the column holding values.
+         * @param exceptColumns - Columns to exclude from melting.
+         */
         melt_except(newColumnName: string, newValueName: string, ...exceptColumns: string[]): DataFrame {
             exceptColumns.forEach(col => this.__check_membership(col));
 
@@ -1204,12 +1461,17 @@ namespace fr {
             return this.melt(newColumnName, newValueName, ...melt_cols);
         }
 
-        //Apply function that supports FrostRow for .getNumber()
+        /**
+         * Applies a function to each row in the `DataFrame` and returns the results as an array.
+         * Each row is passed as a `FrostRow` for structured access.
+         *
+         * @param fn - Function to apply to each row.
+         * @returns An array of results from applying the function.
+         */
         apply<T>(fn: (row: FrostRow) => T): T[] {
             return this.values.map(row => fn(toFrostRow(row)));
         }
 
-        //Hidden typed apply function
         private __apply_typed<T>(
             fn: (row: { [key: string]: T }) => T,
             caster: (v: CellValue) => T
@@ -1223,14 +1485,23 @@ namespace fr {
             });
         }
 
-        //Used typed apply to cast apply as Strings and Nubmers
+        /** Applies a numeric function to each row and returns the results. */
         apply_numeric(fn: (row: { [key: string]: number }) => number): number[] {
             return this.__apply_typed(fn, Number);
         }
+        /** Applies a string function to each row and returns the results. */
         apply_string(fn: (row: { [key: string]: string }) => string): string[] {
             return this.__apply_typed(fn, String);
         }
 
+        /** 
+            * Applies a function to numeric values from the specified columns of each row.
+            * Returns an array of results.
+            *
+            * @param fn - Function to apply to the selected numeric values.
+            * @param columns - Columns to extract numeric values from.
+            * @returns An array of computed results for each row.
+            */
         map_cols_numeric(fn: (values: number[]) => number, ...columns: string[]): number[] {
             //Check that all columns are in the df, and that they're numeric
             columns.forEach(c => {
@@ -1244,6 +1515,15 @@ namespace fr {
             })
         }
 
+
+        /**
+         * Removes rows at the specified indices and returns a new `DataFrame`.
+         * Supports negative indices, which count from the end.
+         *
+         * @param {...number[]} rows - Row indices to drop. Negative values count from the end.
+         * @returns {DataFrame} A new `DataFrame` without the specified rows.
+         * @throws {RangeError} If an index exceeds the number of rows.
+         */
         drop_rows(...rows: number[]): DataFrame {
             let df = this.copy();
 
@@ -1262,6 +1542,8 @@ namespace fr {
             return df;
         }
 
+
+        /** Returns the first `n` rows as a new DataFrame. */
         head(n_rows: number = 10): DataFrame {
             if (this.values.length <= n_rows) { return this }
             let df = this.copy();
@@ -1269,6 +1551,7 @@ namespace fr {
             return df;
         }
 
+        /** Returns the last `n` rows as a new DataFrame. */
         tail(n_rows: number = 10): DataFrame {
             if (this.values.length <= n_rows) { return this }
             let df = this.copy();
@@ -1345,6 +1628,7 @@ namespace fr {
             console.log([headerRow, divider, ...dataRows, "", size_statement].join("\n"));
         }
 
+        
         validate_key(key: DataFrame, on: [string, string] | string, errors: ("raise" | "return" | "warn") = "raise"): CellValue[] {
             let left_on: string;
             let right_on: string;
@@ -1376,6 +1660,7 @@ namespace fr {
 
             return not_in_key
         }
+
 
         private __overwrite_to_table(table: ExcelScript.Table) {
             let table_rng = table.getRange();
@@ -1447,14 +1732,18 @@ namespace fr {
             first_cell.getResizedRange(new_values.length - 1, new_values[0].length - 1).setValues(new_values);
         }
 
-        to_table(table: ExcelScript.Table, method: ('o' | 'a')) {
-            switch (method) {
-                case 'o': return this.__overwrite_to_table(table);
-                case 'a': return this.__append_to_table(table);
-                default: throw new SyntaxError("Table write method must either be 'o' (overwrite), or 'a' (append).")
-            }
-        }
-
+        /**
+         * Creates a pivot table from the `DataFrame`.
+         * Groups data by `index` and `columns`, aggregating `values` using the specified function.
+         *
+         * @param {string} index - Column to use as the new table’s row index.
+         * @param {string} columns - Column to pivot into new columns.
+         * @param {string} values - Column to aggregate.
+         * @param {Operation} [aggFunc="count"] - Aggregation function to apply (e.g., "sum", "mean").
+         * @param {CellValue} [fillNa=null] - Value to use for missing entries in the pivot table.
+         * @returns {DataFrame} A new `DataFrame` structured as a pivot table.
+         * @throws Will throw if any of the specified columns do not exist.
+         */
         pivot(index: string, columns: string, values: string, aggFunc: Operation = "count", fillNa: CellValue = null) {
             this.__check_membership(index);
             this.__check_membership(columns);
@@ -1488,6 +1777,14 @@ namespace fr {
             });
 
             return new DataFrame([headers, ...data])
+        };
+        
+        to_table(table: ExcelScript.Table, method: ('o' | 'a')) {
+            switch (method) {
+                case 'o': return this.__overwrite_to_table(table);
+                case 'a': return this.__append_to_table(table);
+                default: throw new SyntaxError("Table write method must either be 'o' (overwrite), or 'a' (append).")
+            }
         }
 
         /**
@@ -1532,7 +1829,7 @@ namespace fr {
     }
 }
 
-function main(workbook: ExcelScript.Workbook){
+function main(workbook: ExcelScript.Workbook) {
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
     // YOUR CODE GOES HERE
     
