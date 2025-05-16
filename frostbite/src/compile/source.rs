@@ -4,7 +4,7 @@
 //! split into its `namespace fr` body and `main` body. It also handles preprocessing
 //! and extraction of Frosts functions and methods from the `fr` namespace.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use crate::compile::utils::preprocess_code;
 
 /// Represents the two sections of a .osts script:

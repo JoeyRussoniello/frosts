@@ -17,4 +17,3 @@ pub mod utils;
 // Re-export core components for ergonomic access
 pub use source::*;
 pub use usage::*;
-pub use utils::*;
