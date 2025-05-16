@@ -33,14 +33,17 @@ fn main() {
     let mut source = FrostSource::from_body(&script.body);
     source.peek("Split into main and fr");
 
+    
     // Clean up whitespace and comments
     source.preprocess(false);
     source.peek("Removing Comments");
 
+    
     // Track fr usage in the main script
     let tracker = FrUsageTracker::from_main(&source.main);
     tracker.print();
 
+    
     // Extract declared functions from the namespace
     let frost_set = source.extract_function_set();
     println!("\n[Top-level functions: {}]", frost_set.functions.len());
@@ -51,4 +54,5 @@ fn main() {
 
     println!("\n[DataFrame methods: {}]", frost_set.dataframe_methods.len());
     println!("{:?}", frost_set.dataframe_methods.keys());
+    // */
 }

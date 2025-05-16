@@ -145,3 +145,67 @@ pub fn preprocess_code(code: &str) -> String {
 
     final_out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ---------- Tests for peek_code ----------
+
+    #[test]
+    fn peek_shorter_than_requested() {
+        let src = "line1\nline2\nline3";
+        peek_code(src, 10); // Should print all 3 lines
+    }
+
+    #[test]
+    fn peek_exact_lines() {
+        let src = (1..=10).map(|i| format!("line{}", i)).collect::<Vec<_>>().join("\n");
+        peek_code(&src, 10); // Should print all lines exactly
+    }
+
+    #[test]
+    fn peek_longer_shows_ellipsis() {
+        let src = (1..=100).map(|i| format!("line{}", i)).collect::<Vec<_>>().join("\n");
+        peek_code(&src, 10); // Should print 5 head, "...", 5 tail
+    }
+
+    #[test]
+    fn peek_on_empty_source() {
+        let src = "";
+        peek_code(src, 10); // Should print nothing, not panic
+    }
+
+    // ---------- Tests for preprocess_code ----------
+
+    #[test]
+    fn removes_single_line_comments() {
+        let input = r#"
+            let x = 5; // this is a comment
+            let y = x + 2; // another one
+        "#;
+        let out = preprocess_code(input);
+        assert!(out.contains("let x = 5;"));
+        assert!(out.contains("let y = x + 2;"));
+        assert!(!out.contains("//"));
+    }
+
+    #[test]
+    fn removes_multiline_comments() {
+        let input = r#"
+            /* This is a
+               multiline comment */
+            let z = 42;
+        "#;
+        let out = preprocess_code(input);
+        assert!(out.contains("let z = 42;"));
+        assert!(!out.contains("multiline"));
+    }
+
+    #[test]
+    fn preserves_strings_with_comment_like_text() {
+        let input = r#"let comment = "// not really";"#;
+        let out = preprocess_code(input);
+        assert!(out.contains(r#"let comment = "// not really";"#));
+    }
+}

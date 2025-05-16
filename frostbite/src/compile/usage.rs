@@ -146,3 +146,88 @@ impl FrUsageTracker {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- Tests for parse_fr_assignment ---
+
+    #[test]
+    fn parses_valid_fr_assignment() {
+        let line = "let df = fr.read_csv(csv);";
+        let result = FrUsageTracker::parse_fr_assignment(line);
+        assert_eq!(result, Some(("df", "read_csv")));
+    }
+
+    #[test]
+    fn ignores_non_fr_assignment() {
+        let line = "let x = workbook.getSheet();";
+        let result = FrUsageTracker::parse_fr_assignment(line);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn handles_spacing_and_tabs() {
+        let line = "   let    data =    fr.load();";
+        let result = FrUsageTracker::parse_fr_assignment(line);
+        assert_eq!(result, Some(("data", "load")));
+    }
+
+    #[test]
+    fn ignores_invalid_assignment_format() {
+        let line = "df = fr.read_csv(csv);"; // no `let`
+        let result = FrUsageTracker::parse_fr_assignment(line);
+        assert_eq!(result, None);
+    }
+
+    // --- Tests for from_main usage extraction ---
+
+    #[test]
+    fn tracks_direct_fr_call() {
+        let main = r#"
+            let df = fr.read_sheet(ws);
+        "#;
+        let tracker = FrUsageTracker::from_main(main);
+        assert!(tracker.fr_calls.contains("read_sheet"));
+        assert!(tracker.tracked_objects.contains_key("df"));
+    }
+
+    #[test]
+    fn detects_chained_method_calls() {
+        let main = r#"
+            let df = fr.read_csv(data);
+            df.filter("col", v => v > 10).to_json();
+        "#;
+        let tracker = FrUsageTracker::from_main(main);
+        assert!(tracker.fr_calls.contains("read_csv"));
+        assert!(tracker.fr_calls.contains("filter"));
+        assert!(tracker.fr_calls.contains("to_json"));
+        assert_eq!(tracker.tracked_objects.get("df").unwrap().len(), 2);
+    }
+
+    #[test]
+    fn handles_multiline_method_chains() {
+        let main = r#"
+            let df = fr.read_csv(data);
+            df
+                .groupBy(["Dept"])
+                .rename({ Dept: "Department" })
+                .to_csv();
+        "#;
+        let tracker = FrUsageTracker::from_main(main);
+        for method in ["groupBy", "rename", "to_csv"] {
+            assert!(tracker.fr_calls.contains(method));
+        }
+    }
+
+    #[test]
+    fn ignores_non_tracked_object_calls() {
+        let main = r#"
+            let x = workbook.getSheet();
+            x.getRange().getValues();
+        "#;
+        let tracker = FrUsageTracker::from_main(main);
+        assert!(tracker.fr_calls.is_empty());
+    }
+}

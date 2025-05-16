@@ -230,3 +230,146 @@ impl FrostSource {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- Tests for FrostSource::from_body ---
+
+    #[test]
+    fn splits_namespace_and_main_correctly() {
+        let code = r#"
+            namespace fr {
+                function a() { return 1; }
+            }
+
+            function main() {
+                console.log("hi");
+            }
+        "#;
+
+        let source = FrostSource::from_body(code);
+        assert!(source.fr.contains("function a()"));
+        assert!(source.main.contains("function main()"));
+    }
+
+    #[test]
+    fn handles_missing_namespace_gracefully() {
+        let code = r#"
+            function main() {
+                console.log("nothing here");
+            }
+        "#;
+        let source = FrostSource::from_body(code);
+        assert!(source.fr.is_empty());
+        assert!(source.main.contains("function main"));
+    }
+
+    #[test]
+    fn handles_empty_input() {
+        let source = FrostSource::from_body("");
+        assert!(source.fr.is_empty());
+        assert!(source.main.is_empty());
+    }
+
+    #[test]
+    fn tracks_nested_braces_correctly() {
+        let code = r#"
+            namespace fr {
+                function a() {
+                    if (true) {
+                        return 1;
+                    }
+                }
+            }
+            function main() {}
+        "#;
+
+        let source = FrostSource::from_body(code);
+        assert!(source.fr.contains("function a"));
+        assert!(source.main.contains("function main"));
+    }
+
+    // --- Tests for FrostSource::extract_function_set ---
+
+    #[test]
+    fn detects_dataframe_methods_and_exports() {
+        let code = r#"
+            namespace fr {
+                export class DataFrame {
+                    filter() {
+                        return this;
+                    }
+
+                    rename() {
+                        return this;
+                    }
+                }
+            }
+
+            function main() {}
+        "#;
+
+        let source = FrostSource::from_body(code);
+        let parsed = source.extract_function_set();
+
+        assert!(parsed.exports.contains_key("DataFrame"));
+        assert!(parsed.dataframe_methods.contains_key("filter"));
+        assert!(parsed.dataframe_methods.contains_key("rename"));
+    }
+
+    #[test]
+    fn captures_top_level_function_but_not_exported() {
+        let code = r#"
+            namespace fr {
+                function add(a, b) {
+                    return a + b;
+                }
+            }
+        "#;
+
+        let source = FrostSource::from_body(code);
+        let parsed = source.extract_function_set();
+
+        assert!(parsed.functions.contains_key("add"));
+        assert!(!parsed.exports.contains_key("add"));
+    }
+
+    #[test]
+    fn captures_export_functions() {
+        let code = r#"
+            namespace fr {
+                export function multiply(a, b) {
+                    return a * b;
+                }
+            }
+        "#;
+
+        let source = FrostSource::from_body(code);
+        let parsed = source.extract_function_set();
+
+        assert!(parsed.functions.contains_key("multiply"));
+    }
+
+    #[test]
+    fn handles_method_brace_depth_properly() {
+        let code = r#"
+            namespace fr {
+                export class DataFrame {
+                    nested() {
+                        if (true) {
+                            return this;
+                        }
+                    }
+                }
+            }
+        "#;
+
+        let source = FrostSource::from_body(code);
+        let parsed = source.extract_function_set();
+
+        assert_eq!(parsed.dataframe_methods.len(), 1);
+        assert!(parsed.dataframe_methods.contains_key("nested"));
+    }
+}
