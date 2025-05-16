@@ -1,13 +1,38 @@
-struct FrUsageTracker {
+//! # compile::usage
+//!
+//! This module defines `FrUsageTracker`, which statically analyzes the `main` function
+//! to determine which functions and methods from the `fr` namespace are actually used.
+//!
+//! It supports identifying top-level `fr.function()` calls as well as chained method
+//! calls on objects like `let df = fr.read_csv(...)`.
+
+use std::collections::{HashMap, HashSet};
+
+/// Tracks which `fr` methods and `DataFrame` methods are used in the `main` function.
+/// This struct is used to filter which functions should be retained during compilation.
+#[derive(Debug)]
+pub struct FrUsageTracker {
+    /// Set of all `fr.someFunction()` or `df.someMethod()` calls
     pub fr_calls: HashSet<String>,
+    /// Mapping from local variables (like `df`) to method names called on them
     pub tracked_objects: HashMap<String, HashSet<String>>,
 }
 
 impl FrUsageTracker {
-    fn from_main(main: &str) -> Self {
+    /// Analyzes the main body of code to extract used `fr` methods and method chains.
+    ///
+    /// # Arguments
+    ///
+    /// * `main` - The string content of the main script body
+    ///
+    /// # Returns
+    ///
+    /// An instance of `FrUsageTracker` with populated `fr_calls` and `tracked_objects`
+    pub fn from_main(main: &str) -> Self {
         let mut fr_calls = HashSet::new();
         let mut tracked_objects = HashMap::new();
 
+        // Step 1: Detect direct fr.function() assignments
         for line in main.lines() {
             if let Some((var, func)) = Self::parse_fr_assignment(line) {
                 fr_calls.insert(func.to_string());
@@ -15,12 +40,14 @@ impl FrUsageTracker {
             }
         }
 
+        // Step 2: Accumulate chained method calls on tracked objects
         let mut buffer: HashMap<String, String> = HashMap::new();
         let mut current_object: Option<String> = None;
 
         for line in main.lines() {
             let trimmed = line.trim();
 
+            // If this line starts a chain, begin buffering
             if current_object.is_none() {
                 for object in tracked_objects.keys() {
                     if trimmed == object || trimmed.starts_with(&format!("{}.", object)) {
@@ -31,6 +58,7 @@ impl FrUsageTracker {
                 }
             }
 
+            // Add to buffer until chain ends
             if let Some(obj) = &current_object {
                 buffer.get_mut(obj).unwrap().push_str(trimmed);
                 buffer.get_mut(obj).unwrap().push(' ');
@@ -41,9 +69,10 @@ impl FrUsageTracker {
             }
         }
 
+        // Step 3: Extract all chained methods from each buffer
         for (obj, block) in buffer {
             let method_calls = block
-                .match_indices('.')
+                .match_indices('.') // look for .methodName(…
                 .filter_map(|(i, _)| {
                     let rest = &block[i + 1..];
                     let name = rest.split(['(', ' ', '\n', ')']).next().unwrap_or("");
@@ -62,24 +91,31 @@ impl FrUsageTracker {
             }
         }
 
+        // Step 4: Merge all tracked methods into the main `fr_calls` set
         for methods in tracked_objects.values() {
             for method in methods {
                 fr_calls.insert(method.clone());
             }
         }
 
-        FrUsageTracker {
+        Self {
             fr_calls,
             tracked_objects,
         }
     }
 
+    /// Tries to parse a line of code like:
+    /// `let df = fr.read_csv(...)` → returns `("df", "read_csv")`
     fn parse_fr_assignment(line: &str) -> Option<(&str, &str)> {
         let line = line.trim();
-        if !line.starts_with("let ") { return None; }
+        if !line.starts_with("let ") {
+            return None;
+        }
 
         let parts: Vec<&str> = line.split('=').collect();
-        if parts.len() != 2 { return None; }
+        if parts.len() != 2 {
+            return None;
+        }
 
         let lhs = parts[0].trim();
         let rhs = parts[1].trim();
@@ -96,7 +132,9 @@ impl FrUsageTracker {
         None
     }
 
-    fn print(&self) {
+    /// Prints the collected usage summary to stdout.
+    /// Useful for debugging what will be retained in the compiled output.
+    pub fn print(&self) {
         println!("\n[Used fr methods]");
         for func in &self.fr_calls {
             println!("fr.{}", func);

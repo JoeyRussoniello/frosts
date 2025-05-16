@@ -1,18 +1,44 @@
-struct FrostSource {
-    fr: String,
-    main: String,
+//! # compile::source
+//!
+//! This module defines the `FrostSource` struct, which represents a raw `.osts` input file
+//! split into its `namespace fr` body and `main` body. It also handles preprocessing
+//! and extraction of Frosts functions and methods from the `fr` namespace.
+
+use std::collections::{HashMap, HashSet};
+use crate::compile::utils::preprocess_code;
+
+/// Represents the two sections of a .osts script:
+/// - `fr`: the core library namespace
+/// - `main`: the user-facing entry point function
+#[derive(Debug)]
+pub struct FrostSource {
+    /// The contents of the `namespace fr { ... }` section
+    pub fr: String,
+    /// The remaining code (typically the `main()` function)
+    pub main: String,
+}
+
+/// Stores categorized function data extracted from the `fr` namespace:
+/// - top-level utility functions
+/// - methods on `class DataFrame`
+/// - functions/classes explicitly exported
+#[derive(Debug)]
+pub struct FrostFunctionSet {
+    /// Top-level `fr.functionName` mappings
+    pub functions: HashMap<String, String>,
+    /// `DataFrame.prototype.method` implementations
+    pub dataframe_methods: HashMap<String, String>,
+    /// Explicit `export function` and `export class` definitions
+    pub exports: HashMap<String, String>,
 }
 
 impl FrostSource {
-    fn peek(&self, step_name: &str) {
-        println!("{}:step_name", step_name);
-        println!("==== FR NAMESPACE ====");
-        peek_code(&self.fr, 20);
-        println!("==== MAIN SCRIPT ====");
-        peek_code(&self.main, 20);
-    }
-
-    fn from_body(body: &str) -> Self {
+    /// Splits a raw `body` string into the `fr` namespace and the `main` logic.
+    ///
+    /// # Arguments
+    ///
+    /// * `body` - The full contents of a .osts file
+    pub fn from_body(body: &str) -> Self {
         let mut fr_namespace = String::new();
         let mut main_script = String::new();
 
@@ -40,20 +66,47 @@ impl FrostSource {
             }
         }
 
-        FrostSource {
+        Self {
             fr: fr_namespace,
             main: main_script,
         }
     }
 
-    fn preprocess(&mut self, clean_main: bool) {
+    /// Prints the first and last few lines of the `fr` and `main` segments
+    /// for inspection during intermediate compilation steps.
+    ///
+    /// # Arguments
+    ///
+    /// * `step_name` - A label to identify the processing phase
+    pub fn peek(&self, step_name: &str) {
+        println!("{}:step_name", step_name);
+        println!("==== FR NAMESPACE ====");
+        crate::compile::utils::peek_code(&self.fr, 20);
+        println!("==== MAIN SCRIPT ====");
+        crate::compile::utils::peek_code(&self.main, 20);
+    }
+
+    /// Preprocesses both `fr` and `main` to strip comments and normalize whitespace.
+    ///
+    /// # Arguments
+    ///
+    /// * `clean_main` - If true, also cleans the main function body
+    pub fn preprocess(&mut self, clean_main: bool) {
         self.fr = preprocess_code(&self.fr);
         if clean_main {
             self.main = preprocess_code(&self.main);
         }
     }
 
-    fn extract_function_set(&self) -> FrostFunctionSet {
+    /// Parses all functions and methods from the `fr` namespace into categorized buckets.
+    ///
+    /// # Returns
+    ///
+    /// A `FrostFunctionSet` containing:
+    /// - top-level functions
+    /// - DataFrame methods
+    /// - explicitly exported symbols
+    pub fn extract_function_set(&self) -> FrostFunctionSet {
         let mut functions = HashMap::new();
         let mut dataframe_methods = HashMap::new();
         let mut exports = HashMap::new();
@@ -67,6 +120,7 @@ impl FrostSource {
         for line in self.fr.lines() {
             let trimmed = line.trim();
 
+            // Handle `export function <name>()`
             if trimmed.starts_with("export function ") {
                 if let Some(name) = trimmed.strip_prefix("export function ") {
                     if let Some(name) = name.split('(').next() {
@@ -77,7 +131,10 @@ impl FrostSource {
                         continue;
                     }
                 }
-            } else if trimmed.starts_with("export class DataFrame") {
+            }
+
+            // Start of `export class DataFrame`
+            else if trimmed.starts_with("export class DataFrame") {
                 current_name = "DataFrame".to_string();
                 exports.insert("DataFrame".to_string(), format!("{}\n", line));
                 in_dataframe = true;
@@ -85,6 +142,7 @@ impl FrostSource {
                 continue;
             }
 
+            // Handle method bodies inside `DataFrame`
             if in_dataframe {
                 brace_depth += line.matches('{').count();
                 brace_depth = brace_depth.saturating_sub(line.matches('}').count());
@@ -105,7 +163,6 @@ impl FrostSource {
                 if capturing {
                     current_fn.push_str(line);
                     current_fn.push('\n');
-
                     brace_depth += line.matches('{').count();
                     brace_depth = brace_depth.saturating_sub(line.matches('}').count());
 
@@ -117,9 +174,11 @@ impl FrostSource {
                     }
                 }
 
-                // Never break out of df block
-                continue;
-            } else if !capturing && (trimmed.starts_with("function ") || trimmed.contains(" = function(")) {
+                continue; // stay in dataframe class until end of file
+            }
+
+            // Top-level non-exported functions
+            else if !capturing && (trimmed.starts_with("function ") || trimmed.contains(" = function(")) {
                 let name = if trimmed.starts_with("function ") {
                     trimmed.strip_prefix("function ")
                         .and_then(|s| s.split('(').next())
@@ -143,6 +202,7 @@ impl FrostSource {
                 continue;
             }
 
+            // Continue collecting function body
             if capturing {
                 current_fn.push_str(line);
                 current_fn.push('\n');
@@ -169,12 +229,4 @@ impl FrostSource {
             exports,
         }
     }
-
 }
-
-struct FrostFunctionSet {
-    functions: HashMap<String, String>,
-    dataframe_methods: HashMap<String, String>,
-    exports: HashMap<String, String>,
-}
-
