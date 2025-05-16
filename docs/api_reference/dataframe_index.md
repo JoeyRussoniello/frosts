@@ -72,6 +72,18 @@ Be aware that larger values may slightly impact performance on huge sheets.
 
 ---
 
+## Why Types Matter
+
+The `DataFrame` tracks column types not just for metadata, but for enforcing correctness across key operations:
+
+- **Summing or averaging** columns via `.sum()`, `.mean()` requires `number` type
+- **Descriptive stats** via `.describe()` only apply to numeric columns
+- **Grouping** with `.groupBy()` automatically applies type-safe aggregation
+
+If you try to run numeric operations on string columns, the DataFrame will throw clear, helpful errors to guide you.
+
+---
+
 ## Key Structures
 
 ### `CellValue`
@@ -126,18 +138,6 @@ interface FrostRow {
 - `df.values`: `Row[]` — underlying rows
 - `df.types`: `{ [key: string]: string }` — column type map
 - `df.shape()`: `[rows, columns]` — returns tuple
-
----
-
-## Why Types Matter
-
-The `DataFrame` tracks column types not just for metadata, but for enforcing correctness across key operations:
-
-- **Summing or averaging** columns via `.sum()`, `.mean()` requires `number` type
-- **Descriptive stats** via `.describe()` only apply to numeric columns
-- **Grouping** with `.groupBy()` automatically applies type-safe aggregation
-
-If you try to run numeric operations on string columns, the DataFrame will throw clear, helpful errors to guide you.
 
 ---
 
