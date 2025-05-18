@@ -11,8 +11,6 @@
 /// * `source` - A string slice representing the source code to inspect.
 /// * `n_lines` - The total number of lines to show. If the code is shorter than this, the entire content is shown.
 
-use::std::collections::{HashMap, HashSet};
-
 pub fn peek_code(source: &str, n_lines: usize) {
     // Split source code into individual lines
     let fr_lines: Vec<&str> = source.lines().collect();

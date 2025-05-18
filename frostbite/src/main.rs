@@ -7,6 +7,8 @@ mod osts_reader;
 mod compile; 
 
 use std::env;
+//Allow peek_code to not be used without warning since it's a utility field for debugging
+#[allow(unused_imports)]
 use compile::utils::peek_code;
 use osts_reader::{Osts, read_file};
 
@@ -42,21 +44,11 @@ fn main() {
     source.peek("Removing Comments");
     
 
-    let mut split_source = source.fr.split("constructor");
-    let always_take = split_source.next().unwrap().to_string();
-    let methods = "constructor".to_string() + split_source.next().unwrap();
-
-    println!("Always Take:");
-    peek_code(&always_take, 10);
-
-    println!("Methods");
-    peek_code(&methods,10);
-
     let fr_namespace = source.extract_function_set();
 
     println!("Encode: {:?}", fr_namespace.dataframe_methods.get("encode_headers"));
     let fr_precedence_graph = graph::Graph::from_function_set(fr_namespace);
-
+    fr_precedence_graph.print();
     
 
     // Parse Main and See Which Frost Functions are alled.

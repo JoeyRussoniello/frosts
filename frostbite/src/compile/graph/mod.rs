@@ -22,16 +22,16 @@ impl Graph{
                 let mut parser = FunctionParser::new();
                 parser.parse(code,"this");
                 
-                //Janky temporary fix for apply's generic typing
-                let mut method = orig_method.to_string();
-                if method == "apply<T>"{
-                    method = "apply".to_string();
-                }
-
                 n += 1;
-                adj_list.insert(method, parser.get_methods());
+                adj_list.insert(strip_generics(orig_method), parser.get_methods());
             });
         
         Graph{n, adj_list}
     }
+
+    pub fn print(&self){
+        println!("Number of vertices: {}",self.n);
+        println!("Adjacency Hashmap: {:#?}",self.adj_list);
+    }
 }
+

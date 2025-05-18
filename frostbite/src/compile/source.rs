@@ -25,11 +25,8 @@ pub struct FrostSource {
 #[derive(Debug)]
 pub struct FrostFunctionSet {
     /// Top-level `fr.functionName` mappings
-    pub functions: HashMap<String, String>,
-    /// `DataFrame.prototype.method` implementations
+    pub always_take: String,
     pub dataframe_methods: HashMap<String, String>,
-    /// Explicit `export function` and `export class` definitions
-    pub exports: HashMap<String, String>,
 }
 
 impl FrostSource {
@@ -115,91 +112,43 @@ impl FrostSource {
         let mut current_name = String::new();
         let mut brace_depth: usize = 0;
         let mut capturing = false;
-        let mut in_dataframe = false;
+        
+        let mut split_source = self.fr.split("constructor");
+        let always_take = split_source.next().unwrap().to_string();
+        let methods = "constructor".to_string() + split_source.next().unwrap();
 
-        for line in self.fr.lines() {
+        for line in methods.lines() {
             let trimmed = line.trim();
 
-            // Handle `export function <name>()`
-            if trimmed.starts_with("export function ") {
-                if let Some(name) = trimmed.strip_prefix("export function ") {
-                    if let Some(name) = name.split('(').next() {
-                        current_name = name.trim().to_string();
-                        capturing = true;
-                        brace_depth = trimmed.matches('{').count();
-                        current_fn = format!("{}\n", line);
-                        continue;
-                    }
-                }
-            }
+            // Handle method bodies inside `DataFrame`
+            brace_depth += line.matches('{').count();
+            brace_depth = brace_depth.saturating_sub(line.matches('}').count());
 
-            // Start of `export class DataFrame`
-            else if trimmed.starts_with("export class DataFrame") {
-                current_name = "DataFrame".to_string();
-                exports.insert("DataFrame".to_string(), format!("{}\n", line));
-                in_dataframe = true;
-                brace_depth = 0;
+            if !capturing && trimmed.contains('(') && trimmed.ends_with('{') {
+                current_name = trimmed
+                    .split('(')
+                    .next()
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                capturing = true;
+                brace_depth += 1;
+                current_fn = format!("{}\n", line);
                 continue;
             }
 
-            // Handle method bodies inside `DataFrame`
-            if in_dataframe {
+            if capturing {
+                current_fn.push_str(line);
+                current_fn.push('\n');
                 brace_depth += line.matches('{').count();
                 brace_depth = brace_depth.saturating_sub(line.matches('}').count());
 
-                if !capturing && trimmed.contains('(') && trimmed.ends_with('{') {
-                    current_name = trimmed
-                        .split('(')
-                        .next()
-                        .unwrap_or("")
-                        .trim()
-                        .to_string();
-                    capturing = true;
-                    brace_depth += 1;
-                    current_fn = format!("{}\n", line);
-                    continue;
+                if brace_depth == 0 {
+                    dataframe_methods.insert(current_name.clone(), current_fn.clone());
+                    capturing = false;
+                    current_fn = String::new();
+                    current_name = String::new();
                 }
-
-                if capturing {
-                    current_fn.push_str(line);
-                    current_fn.push('\n');
-                    brace_depth += line.matches('{').count();
-                    brace_depth = brace_depth.saturating_sub(line.matches('}').count());
-
-                    if brace_depth == 0 {
-                        dataframe_methods.insert(current_name.clone(), current_fn.clone());
-                        capturing = false;
-                        current_fn = String::new();
-                        current_name = String::new();
-                    }
-                }
-
-                continue; // stay in dataframe class until end of file
-            }
-
-            // Top-level non-exported functions
-            else if !capturing && (trimmed.starts_with("function ") || trimmed.contains(" = function(")) {
-                let name = if trimmed.starts_with("function ") {
-                    trimmed.strip_prefix("function ")
-                        .and_then(|s| s.split('(').next())
-                        .unwrap_or("")
-                        .trim()
-                } else {
-                    trimmed
-                        .split('=')
-                        .next()
-                        .map(|s| s.trim())
-                        .unwrap_or("")
-                        .split('.')
-                        .last()
-                        .unwrap_or("")
-                };
-
-                current_name = name.to_string();
-                capturing = true;
-                brace_depth = trimmed.matches('{').count().saturating_sub(trimmed.matches('}').count());
-                current_fn = format!("{}\n", line);
-                continue;
             }
 
             // Continue collecting function body
@@ -222,16 +171,13 @@ impl FrostSource {
                 }
             }
         }
-        
-        
+
         FrostFunctionSet {
-            functions,
-            dataframe_methods,
-            exports,
+                always_take,
+                dataframe_methods,
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -295,10 +241,14 @@ mod tests {
     // --- Tests for FrostSource::extract_function_set ---
 
     #[test]
-    fn detects_dataframe_methods_and_exports() {
+    fn detects_dataframe_methods() {
         let code = r#"
             namespace fr {
                 export class DataFrame {
+                    constructor(){
+
+                    }
+
                     filter() {
                         return this;
                     }
@@ -315,49 +265,20 @@ mod tests {
         let source = FrostSource::from_body(code);
         let parsed = source.extract_function_set();
 
-        assert!(parsed.exports.contains_key("DataFrame"));
         assert!(parsed.dataframe_methods.contains_key("filter"));
         assert!(parsed.dataframe_methods.contains_key("rename"));
+        assert!(parsed.dataframe_methods.contains_key("constructor"));
     }
 
-    #[test]
-    fn captures_top_level_function_but_not_exported() {
-        let code = r#"
-            namespace fr {
-                function add(a, b) {
-                    return a + b;
-                }
-            }
-        "#;
-
-        let source = FrostSource::from_body(code);
-        let parsed = source.extract_function_set();
-
-        assert!(parsed.functions.contains_key("add"));
-        assert!(!parsed.exports.contains_key("add"));
-    }
-
-    #[test]
-    fn captures_export_functions() {
-        let code = r#"
-            namespace fr {
-                export function multiply(a, b) {
-                    return a * b;
-                }
-            }
-        "#;
-
-        let source = FrostSource::from_body(code);
-        let parsed = source.extract_function_set();
-
-        assert!(parsed.functions.contains_key("multiply"));
-    }
 
     #[test]
     fn handles_method_brace_depth_properly() {
         let code = r#"
             namespace fr {
                 export class DataFrame {
+                    constructor(){
+                        
+                    }
                     nested() {
                         if (true) {
                             return this;
@@ -370,7 +291,8 @@ mod tests {
         let source = FrostSource::from_body(code);
         let parsed = source.extract_function_set();
 
-        assert_eq!(parsed.dataframe_methods.len(), 1);
+        assert_eq!(parsed.dataframe_methods.len(), 2);
         assert!(parsed.dataframe_methods.contains_key("nested"));
+        assert!(parsed.dataframe_methods.contains_key("constructor"));
     }
 }
