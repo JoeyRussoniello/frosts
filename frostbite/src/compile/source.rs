@@ -27,6 +27,7 @@ pub struct FrostFunctionSet {
     /// Top-level `fr.functionName` mappings
     pub always_take: String,
     pub dataframe_methods: HashMap<String, String>,
+    pub problematic_methods: HashMap<String, String>
 }
 
 impl FrostSource {
@@ -105,32 +106,25 @@ impl FrostSource {
     /// - explicitly exported symbols
     pub fn extract_function_set(&self) -> FrostFunctionSet {
         let mut dataframe_methods = HashMap::new();
+        let mut problematic_methods = HashMap::new();
 
         let mut current_fn = String::new();
         let mut current_name = String::new();
         let mut brace_depth: usize = 0;
         let mut capturing = false;
-        
+
         let mut split_source = self.fr.split("constructor");
-        let always_take = split_source.next().unwrap().to_string();
+        let before_class = split_source.next().unwrap().to_string();
         let methods = "constructor".to_string() + split_source.next().unwrap();
 
-        for line in methods.lines() {
+        // 1️⃣ Handle problematic methods (before the class)
+        for line in before_class.lines() {
             let trimmed = line.trim();
 
-            // Handle method bodies inside `DataFrame`
-            brace_depth += line.matches('{').count();
-            brace_depth = brace_depth.saturating_sub(line.matches('}').count());
-
-            if !capturing && trimmed.contains('(') && trimmed.ends_with('{') {
-                current_name = trimmed
-                    .split('(')
-                    .next()
-                    .unwrap_or("")
-                    .trim()
-                    .to_string();
+            if !capturing && trimmed.starts_with("export function") && trimmed.contains("combine_dfs(") {
+                current_name = "combine_dfs".to_string();
                 capturing = true;
-                brace_depth += 1;
+                brace_depth = 1;
                 current_fn = format!("{}\n", line);
                 continue;
             }
@@ -142,41 +136,56 @@ impl FrostSource {
                 brace_depth = brace_depth.saturating_sub(line.matches('}').count());
 
                 if brace_depth == 0 {
-
-                    dataframe_methods.insert(clean_node(&current_name), current_fn.clone());
+                    problematic_methods.insert(current_name.clone(), current_fn.clone());
                     capturing = false;
-                    current_fn = String::new();
-                    current_name = String::new();
+                    current_fn.clear();
+                    current_name.clear();
                 }
             }
+        }
 
-            // // Continue collecting function body
-            // if capturing {
-            //     current_fn.push_str(line);
-            //     current_fn.push('\n');
-            //     brace_depth += line.matches('{').count();
-            //     brace_depth = brace_depth.saturating_sub(line.matches('}').count());
+        // 2️⃣ Handle DataFrame methods
+        for line in methods.lines() {
+            let trimmed = line.trim();
 
-            //     if brace_depth == 0 {
-            //         functions.insert(current_name.clone(), current_fn.clone());
+            if !capturing && trimmed.contains('(') && trimmed.ends_with('{') {
+                current_name = trimmed
+                    .split('(')
+                    .next()
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                capturing = true;
+                brace_depth = 1;
+                current_fn = format!("{}\n", line);
+                continue;
+            }
 
-            //         if current_fn.starts_with("export function") {
-            //             exports.insert(current_name.clone(), current_fn.clone());
-            //         }
+            if capturing {
+                current_fn.push_str(line);
+                current_fn.push('\n');
+                brace_depth += line.matches('{').count();
+                brace_depth = brace_depth.saturating_sub(line.matches('}').count());
 
-            //         capturing = false;
-            //         current_fn = String::new();
-            //         current_name = String::new();
-            //     }
-            // }
+                if brace_depth == 0 {
+                    let cleaned = clean_node(&current_name);
+                    dataframe_methods.insert(cleaned, current_fn.clone());
+                    capturing = false;
+                    current_fn.clear();
+                    current_name.clear();
+                }
+            }
         }
 
         FrostFunctionSet {
-                always_take,
-                dataframe_methods,
+            always_take: before_class,
+            dataframe_methods,
+            problematic_methods,
         }
     }
+
 }
+
 
 impl FrostFunctionSet{
     pub fn compile(&self, necessary_functions: &HashSet<String>) -> String{
@@ -318,5 +327,31 @@ mod tests {
         assert_eq!(parsed.dataframe_methods.len(), 2);
         assert!(parsed.dataframe_methods.contains_key("nested"));
         assert!(parsed.dataframe_methods.contains_key("constructor"));
+    }
+
+    #[test]
+    fn extract_function_set_moves_combine_dfs_to_problematic() {
+        let src = r#"
+            export function combine_dfs(dfs: DataFrame[]): DataFrame {
+                return dfs[0].concat_all("outer", ...dfs.slice(1));
+            }
+
+            class DataFrame {
+                constructor(data) {
+                    this.values = data;
+                }
+
+                filter() {
+                    return this.values.filter(x => x !== null);
+                }
+            }
+        "#;
+
+        let fake_source = FrostSource { fr: src.to_string(), main:String::from("") };
+        let frost_set = fake_source.extract_function_set();
+
+        assert!(frost_set.problematic_methods.contains_key("combine_dfs"));
+        assert!(frost_set.dataframe_methods.contains_key("filter"));
+        assert!(!frost_set.dataframe_methods.contains_key("combine_dfs"));
     }
 }

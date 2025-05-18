@@ -110,6 +110,7 @@ mod tests {
         FrostFunctionSet {
             always_take: String::new(),
             dataframe_methods,
+            problematic_methods: HashMap::new()
         }
     }
 

@@ -70,5 +70,6 @@ fn main() {
     println!("\nFINAL CLEANED SCRIPT:\n\n");
     peek_code(&compiled_code,20);
 
+    println!("\nProblematic Methods:\n{:#?}",fr_namespace.problematic_methods);
     std::fs::write("compiled.txt", &compiled_code).expect("Unable to write file");
 }
