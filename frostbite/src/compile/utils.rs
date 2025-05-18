@@ -149,67 +149,6 @@ pub fn preprocess_code(code: &str) -> String {
     final_out
 }
 
-/// Attempts to parse a variable assignment like:
-/// `let df = this.copy();` or `const df = fr.load();`
-///
-/// Returns `Some((var_name, function_name))` if the RHS starts with `substr.`
-///
-/// # Arguments
-///
-/// * `line` - The full line of code
-/// * `substr` - The expected prefix on the right-hand side (e.g., `"this"` or `"fr"`)
-pub fn parse_assignment<'a>(line: &'a str, substr: &str) -> Option<(&'a str, &'a str)> {
-    let line = line.trim();
-    if !(line.starts_with("let ") || line.starts_with("const ")) {
-        return None;
-    }
-
-    let parts: Vec<&str> = line.split('=').collect();
-    if parts.len() != 2 {
-        return None;
-    }
-
-    let lhs = parts[0].trim();
-    let rhs = parts[1].trim();
-
-    // Accept both let and const
-    let var = lhs
-        .strip_prefix("let")
-        .or_else(|| lhs.strip_prefix("const"))?
-        .trim()
-        .split_whitespace()
-        .next()?;
-
-    if rhs.starts_with(substr) {
-        let func = rhs
-            .strip_prefix(&(String::from(substr) + "."))?
-            .split('(')
-            .next()
-            .map(|s| s.strip_suffix(';').unwrap_or(s))?;
-
-        return Some((var, func));
-    }
-
-    None
-}
-
-/// Returns true if the method reference is actually a known DataFrame field,
-/// such as `this.values`, `this.columns`, etc.
-pub fn is_known_dataframe_field(s: &str) -> bool {
-    return ["values", "columns", "dtypes", "__headers"]
-        .iter()
-        .any(|field| s.contains(field));
-}
-
-pub fn track_recursive(code: &str, start_tracking: &str){
-    let tracking= vec![start_tracking];
-
-    for line in code.lines(){
-        for item in tracking.iter(){
-
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {

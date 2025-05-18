@@ -11,10 +11,9 @@ use osts_reader::{Osts, read_file};
 
 #[allow(unused_imports)]
 use compile::{
-    FrostSource,
-    FrUsageTracker,
+    source::FrostSource,
     graph,
-    code_parser,
+    code_parser::FunctionParser,
     utils
 };
 
@@ -41,12 +40,21 @@ fn main() {
     source.preprocess(true);
     source.peek("Removing Comments");
     
-    
-    let mut parser = code_parser::FunctionParser::new();
+    println!("==========Fr Namespace======\n");
+    utils::peek_code(&source.fr, 40);
+    let fr_namespace = source.extract_function_set();
+
+    println!("Encode: {:?}", fr_namespace.dataframe_methods.get("encode_headers"));
+    let fr_precedence_graph = graph::Graph::from_function_set(fr_namespace);
+
+    println!("{:?}",fr_precedence_graph.adj_list.get("encode_headers"));
+
+    // Parse Main and See Which Frost Functions are alled.
+    let mut parser = FunctionParser::new();
     parser.parse(&source.main,"fr");
     let mut called_functions = parser.get_methods();
     called_functions.sort();
     
-    println!("{:?}",called_functions);
+    
     // */
 }

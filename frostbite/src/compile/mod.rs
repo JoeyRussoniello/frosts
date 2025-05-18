@@ -8,9 +8,6 @@
 /// Handles parsing and preprocessing of the input `.osts` file into structured segments.
 pub mod source;
 
-/// Tracks usage of `fr` functions and chained `DataFrame` methods from the main body.
-pub mod usage;
-
 // Maps nested function call loops in a graph for compilation
 pub mod graph;
 
@@ -18,9 +15,3 @@ pub mod graph;
 pub mod utils;
 
 pub mod code_parser;
-
-// Re-export core components for ergonomic access
-pub use source::*;
-pub use usage::*;
-pub use graph::*;
-pub use code_parser::*;

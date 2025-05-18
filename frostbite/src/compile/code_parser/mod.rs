@@ -22,7 +22,11 @@ impl FunctionParser {
                 .filter_map(|substr| parse_assignment(line, &substr))
                 .collect();
 
-            assignments.iter().for_each(|a| {self.tracking.insert(a.to_string());});
+            for a in assignments {
+                if !is_apply_assignment(line) {
+                    self.tracking.insert(a.to_string());
+                }
+            }
         }
     }
 
@@ -165,15 +169,8 @@ pub fn is_known_dataframe_field(s: &str) -> bool {
         .any(|field| s.contains(field))
 }
 
-/// Returns true if the input string is a valid ts/js identifier 
-fn is_valid_identifier(s: &str) -> bool {
-    let mut chars = s.chars();
-    match chars.next() {
-        Some(first) if first.is_ascii_alphabetic() || first == '_' || first == '$' => {
-            chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
-        }
-        _ => false,
-    }
+fn is_apply_assignment(line: &str) -> bool {
+    line.contains(".apply(")
 }
 
 #[cfg(test)]
@@ -434,5 +431,39 @@ mod tests {
         parser.parse(code, "fr"); // "fr" shouldn't match anything
 
         assert!(parser.functions.is_empty());
+    }
+
+    #[test]
+    fn parser_ignores_dot_number_literals() {
+        let code = r#"
+            let df = fr.read_sheet();
+            let income_tax = df.apply(row => row.get_number("Income") * 0.3);
+            df.apply(row => row.get_number("Salary") * 0.3);
+        "#;
+        let mut parser = FunctionParser::new();
+        parser.parse(code, "fr");
+
+        assert!(parser.functions.contains("read_sheet"));
+        assert!(parser.functions.contains("apply"));
+        assert!(parser.functions.contains("get_number"));
+        assert!(!parser.functions.contains("3")); // This is what we’re fixing!
+    }
+
+    #[test]
+    fn parser_does_not_track_apply_result_as_dataframe() {
+        let code = r#"
+            let df = fr.read_csv();
+            let x = df.apply(row => row.get("Income"));
+            x.map(v => v.toString());
+        "#;
+
+        let mut parser = FunctionParser::new();
+        parser.parse(code, "fr");
+
+        assert!(parser.functions.contains("read_csv"));
+        assert!(parser.functions.contains("apply"));
+
+        // Should NOT track x as a DataFrame
+        assert!(!parser.functions.contains("map"));
     }
 }
