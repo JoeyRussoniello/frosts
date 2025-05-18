@@ -6,6 +6,7 @@
 
 use std::collections::HashMap;
 use crate::compile::utils::preprocess_code;
+use super::utils::clean_node;
 
 /// Represents the two sections of a .osts script:
 /// - `fr`: the core library namespace
@@ -19,9 +20,8 @@ pub struct FrostSource {
 }
 
 /// Stores categorized function data extracted from the `fr` namespace:
-/// - top-level utility functions
+/// - top-level utility functions held in always_take
 /// - methods on `class DataFrame`
-/// - functions/classes explicitly exported
 #[derive(Debug)]
 pub struct FrostFunctionSet {
     /// Top-level `fr.functionName` mappings
@@ -144,7 +144,8 @@ impl FrostSource {
                 brace_depth = brace_depth.saturating_sub(line.matches('}').count());
 
                 if brace_depth == 0 {
-                    dataframe_methods.insert(current_name.clone(), current_fn.clone());
+
+                    dataframe_methods.insert(clean_node(&current_name), current_fn.clone());
                     capturing = false;
                     current_fn = String::new();
                     current_name = String::new();

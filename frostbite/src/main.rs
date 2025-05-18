@@ -46,17 +46,16 @@ fn main() {
 
     let fr_namespace = source.extract_function_set();
 
-    println!("Encode: {:?}", fr_namespace.dataframe_methods.get("encode_headers"));
     let fr_precedence_graph = graph::Graph::from_function_set(fr_namespace);
-    fr_precedence_graph.print();
     
-
     // Parse Main and See Which Frost Functions are alled.
     let mut parser = FunctionParser::new();
     parser.parse(&source.main,"fr");
     let mut called_functions = parser.get_methods();
     called_functions.sort();
     
-    
+    println!("=======Method Analysis=======");
+    let required_methods = fr_precedence_graph.reachable_from(&called_functions);
+    println!("Required Methods: \n{:?}",required_methods);
     // */
 }

@@ -148,6 +148,11 @@ pub fn preprocess_code(code: &str) -> String {
 }
 
 
+/// Read an input node and strip it's private designation
+pub fn clean_node(s: &str) -> String{
+    s.strip_prefix("private").unwrap_or(s).trim().to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,5 +214,21 @@ mod tests {
         let input = r#"let comment = "// not really";"#;
         let out = preprocess_code(input);
         assert!(out.contains(r#"let comment = "// not really";"#));
+    }
+
+    #[test]
+    fn clean_node_strips_private(){
+        assert_eq!(
+            clean_node("private __check_membership"),
+            "__check_membership"
+        );
+    }
+
+    #[test]
+    fn clean_node_leaves_nonprivate(){
+        assert_eq!(
+            clean_node("filter"),
+            "filter"
+        )
     }
 }
