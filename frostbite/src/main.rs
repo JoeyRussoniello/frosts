@@ -9,9 +9,13 @@ mod compile;
 use std::env;
 use osts_reader::{Osts, read_file};
 
+#[allow(unused_imports)]
 use compile::{
     FrostSource,
-    FrUsageTracker
+    FrUsageTracker,
+    graph,
+    code_parser,
+    utils
 };
 
 fn main() {
@@ -33,26 +37,15 @@ fn main() {
     let mut source = FrostSource::from_body(&script.body);
     source.peek("Split into main and fr");
 
-    
     // Clean up whitespace and comments
-    source.preprocess(false);
+    source.preprocess(true);
     source.peek("Removing Comments");
-
     
-    // Track fr usage in the main script
-    let tracker = FrUsageTracker::from_main(&source.main);
-    tracker.print();
-
     
-    // Extract declared functions from the namespace
-    let frost_set = source.extract_function_set();
-    println!("\n[Top-level functions: {}]", frost_set.functions.len());
-    println!("{:?}", frost_set.functions.keys());
-
-    println!("\n[Top-level export function: {}]", frost_set.exports.len());
-    println!("{:?}", frost_set.exports.keys());
-
-    println!("\n[DataFrame methods: {}]", frost_set.dataframe_methods.len());
-    println!("{:?}", frost_set.dataframe_methods.keys());
+    let mut parser = code_parser::FunctionParser::new();
+    parser.parse(&source.main,"fr");
+    let mut called_functions = parser.get_methods();
+    called_functions.sort();
+    println!("{:?}",called_functions);
     // */
 }

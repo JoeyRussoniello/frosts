@@ -11,9 +11,16 @@ pub mod source;
 /// Tracks usage of `fr` functions and chained `DataFrame` methods from the main body.
 pub mod usage;
 
+// Maps nested function call loops in a graph for compilation
+pub mod graph;
+
 /// Provides shared utilities like `peek_code()` and `preprocess_code()`.
 pub mod utils;
+
+pub mod code_parser;
 
 // Re-export core components for ergonomic access
 pub use source::*;
 pub use usage::*;
+pub use graph::*;
+pub use code_parser::*;
