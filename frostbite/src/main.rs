@@ -46,16 +46,29 @@ fn main() {
 
     let fr_namespace = source.extract_function_set();
 
-    let fr_precedence_graph = graph::Graph::from_function_set(fr_namespace);
+    let fr_call_graph = graph::Graph::from_function_set(&fr_namespace);
     
     // Parse Main and See Which Frost Functions are alled.
     let mut parser = FunctionParser::new();
     parser.parse(&source.main,"fr");
     let mut called_functions = parser.get_methods();
     called_functions.sort();
+    println!("Compiling for called functions...:\n{:?}\n",called_functions);
     
-    println!("=======Method Analysis=======");
-    let required_methods = fr_precedence_graph.reachable_from(&called_functions);
-    println!("Required Methods: \n{:?}",required_methods);
-    // */
+    
+    let mut required_methods = fr_call_graph.search(&called_functions);
+    //Add the constructor function to the list of required
+    required_methods.insert("constructor".to_string());
+    println!("Found required methods: \n{:?}\n",required_methods);
+
+    println!("Beginning fr size reduction...");
+    let compiled_fr_code = fr_namespace.compile(&required_methods);
+    
+    println!("Compiling Final Script...");
+    let compiled_code = compiled_fr_code + "\n" + &source.main;
+
+    println!("\nFINAL CLEANED SCRIPT:\n\n");
+    peek_code(&compiled_code,20);
+
+    std::fs::write("compiled.txt", &compiled_code).expect("Unable to write file");
 }

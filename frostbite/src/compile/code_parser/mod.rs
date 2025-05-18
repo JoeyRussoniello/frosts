@@ -7,8 +7,10 @@ pub struct FunctionParser {
 
 impl FunctionParser {
     pub fn new() -> Self {
+        let mut tracking_start :HashSet<String> = HashSet::new();
+        tracking_start.insert(String::from("new DataFrame")); //Track new DataFrame by default for internal use 
         FunctionParser {
-            tracking: HashSet::new(),
+            tracking: tracking_start,
             functions: HashSet::new(),
         }
     }
@@ -134,12 +136,12 @@ impl FunctionParser {
 }
 
 fn parse_assignment<'a>(line: &'a str, substr: &str) -> Option<&'a str> {
-    let line= line.trim();
+    let line = line.trim();
     if !(line.starts_with("let ") || line.starts_with("const ")) {
         return None;
     }
 
-    let parts: Vec<&str> = line.split('=').collect();
+    let parts: Vec<&str> = line.splitn(2, '=').collect();
     if parts.len() != 2 {
         return None;
     }
@@ -147,14 +149,15 @@ fn parse_assignment<'a>(line: &'a str, substr: &str) -> Option<&'a str> {
     let lhs = parts[0].trim();
     let rhs = parts[1].trim();
 
-    if rhs.starts_with(substr){
+    // FIXED LINE:
+    if rhs.contains(substr) {
         let var = lhs
             .strip_prefix("let")
             .or_else(|| lhs.strip_prefix("const"))?
             .trim()
             .split_whitespace()
             .next();
-        
+
         return var;
     }
 
@@ -465,5 +468,29 @@ mod tests {
 
         // Should NOT track x as a DataFrame
         assert!(!parser.functions.contains("map"));
+    }
+
+    #[test]
+    fn parses_df_from_new_dataframe() {
+        let code = r#"
+            let df = new DataFrame(...);
+            df.filter();
+        "#;
+
+        let mut parser = FunctionParser::new();
+        parser.parse(code, "this"); // we still use "this" as a fallback root
+
+        assert!(parser.tracking.contains("df"));
+        assert!(parser.functions.contains("filter"));
+    }
+
+    #[test]
+    fn parses_groupby_call() {
+        let code = "const groupDf = new DataFrame([this.columns, ...grouped[groupKey].map(row => this.columns.map(col => row[col]))]);";
+
+        let mut parser = FunctionParser::new();
+        parser.parse(code, "this");
+
+        assert!(parser.tracking.contains("groupDf"));
     }
 }

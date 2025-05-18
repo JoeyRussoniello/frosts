@@ -4,7 +4,7 @@
 //! split into its `namespace fr` body and `main` body. It also handles preprocessing
 //! and extraction of Frosts functions and methods from the `fr` namespace.
 
-use std::collections::HashMap;
+use std::collections::{HashMap,HashSet};
 use crate::compile::utils::preprocess_code;
 use super::utils::clean_node;
 
@@ -104,9 +104,7 @@ impl FrostSource {
     /// - DataFrame methods
     /// - explicitly exported symbols
     pub fn extract_function_set(&self) -> FrostFunctionSet {
-        let mut functions = HashMap::new();
         let mut dataframe_methods = HashMap::new();
-        let mut exports = HashMap::new();
 
         let mut current_fn = String::new();
         let mut current_name = String::new();
@@ -152,31 +150,56 @@ impl FrostSource {
                 }
             }
 
-            // Continue collecting function body
-            if capturing {
-                current_fn.push_str(line);
-                current_fn.push('\n');
-                brace_depth += line.matches('{').count();
-                brace_depth = brace_depth.saturating_sub(line.matches('}').count());
+            // // Continue collecting function body
+            // if capturing {
+            //     current_fn.push_str(line);
+            //     current_fn.push('\n');
+            //     brace_depth += line.matches('{').count();
+            //     brace_depth = brace_depth.saturating_sub(line.matches('}').count());
 
-                if brace_depth == 0 {
-                    functions.insert(current_name.clone(), current_fn.clone());
+            //     if brace_depth == 0 {
+            //         functions.insert(current_name.clone(), current_fn.clone());
 
-                    if current_fn.starts_with("export function") {
-                        exports.insert(current_name.clone(), current_fn.clone());
-                    }
+            //         if current_fn.starts_with("export function") {
+            //             exports.insert(current_name.clone(), current_fn.clone());
+            //         }
 
-                    capturing = false;
-                    current_fn = String::new();
-                    current_name = String::new();
-                }
-            }
+            //         capturing = false;
+            //         current_fn = String::new();
+            //         current_name = String::new();
+            //     }
+            // }
         }
 
         FrostFunctionSet {
                 always_take,
                 dataframe_methods,
         }
+    }
+}
+
+impl FrostFunctionSet{
+    pub fn compile(&self, necessary_functions: &HashSet<String>) -> String{
+
+        let method_str: String = necessary_functions
+            .iter()
+            .map(|func| {
+                //Another workaround for the type generic
+                let call_method = match func == "apply"{
+                    true => "apply<T>",
+                    false => func 
+                };
+
+                self.dataframe_methods
+                .get(call_method)
+                .expect(&format!("Couldn't find method: {:?}", func))
+            })
+            .cloned()
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        // Return the final compiled script
+        return vec![self.always_take.clone(),method_str,String::from("}"),String::from("}"),].join("\n");
     }
 }
 #[cfg(test)]
