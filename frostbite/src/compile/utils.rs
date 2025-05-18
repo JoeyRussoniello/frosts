@@ -273,5 +273,4 @@ mod tests {
         let out = preprocess_code(input);
         assert!(out.contains(r#"let comment = "// not really";"#));
     }
-    
 }

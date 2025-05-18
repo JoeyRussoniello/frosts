@@ -57,13 +57,23 @@ impl FunctionParser {
     }
 
     fn find_methods_in_chain(&self, code: &str) -> Option<(String, Vec<String>)> {
+        //Messay and complicated substr matching
         let mut longest_match = "";
 
         for tracked in &self.tracking {
-            if code.contains(tracked) && tracked.len() > longest_match.len() {
-                longest_match = tracked;
+            if let Some(pos) = code.find(tracked) {
+                let after = code[pos + tracked.len()..].trim_start();
+
+                let is_boundary_valid = after.starts_with('.') || after.starts_with('[');
+
+                let is_start_valid = pos == 0 || !code[..pos].chars().last().map(|c| c.is_alphanumeric() || c == '_').unwrap_or(false);
+
+                if is_boundary_valid && is_start_valid && tracked.len() > longest_match.len() {
+                    longest_match = tracked;
+                }
             }
         }
+
 
         if longest_match.is_empty() {
             return None;
@@ -153,6 +163,17 @@ pub fn is_known_dataframe_field(s: &str) -> bool {
     ["values", "columns", "dtypes", "__headers"]
         .iter()
         .any(|field| s.contains(field))
+}
+
+/// Returns true if the input string is a valid ts/js identifier 
+fn is_valid_identifier(s: &str) -> bool {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(first) if first.is_ascii_alphabetic() || first == '_' || first == '$' => {
+            chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
+        }
+        _ => false,
+    }
 }
 
 #[cfg(test)]
@@ -370,5 +391,48 @@ mod tests {
 
         assert!(parser.functions.contains("groupBy"));
         assert!(parser.functions.contains("rename"));
+    }
+
+    #[test]
+    fn parses_mixed_multiline_and_single_line_arguments() {
+        let code = r#"
+            df.groupBy(
+                ["Team"],
+                {"Sales": ["sum"]}
+            ).print()
+        "#;
+
+        let mut parser = FunctionParser::new();
+        parser.tracking.insert("df".to_string());
+        parser.second_pass_methods(code);
+
+        assert!(parser.functions.contains("groupBy"));
+        assert!(parser.functions.contains("print"));
+    }
+    #[test]
+    fn parses_semicolon_inside_arguments() {
+        let code = r#"
+            df.set_col("x; y", df.apply())
+            df.save()
+        "#;
+
+        let mut parser = FunctionParser::new();
+        parser.tracking.insert("df".to_string());
+        parser.second_pass_methods(code);
+
+        assert!(parser.functions.contains("set_col"));
+        assert!(parser.functions.contains("apply"));
+        assert!(parser.functions.contains("save"));
+    }
+
+    #[test]
+    fn parser_avoids_partial_identifier_matches() {
+        let code = r#"
+            let frequency = workbook.getWorksheet("3")
+        "#;
+        let mut parser = FunctionParser::new();
+        parser.parse(code, "fr"); // "fr" shouldn't match anything
+
+        assert!(parser.functions.is_empty());
     }
 }

@@ -46,6 +46,7 @@ fn main() {
     parser.parse(&source.main,"fr");
     let mut called_functions = parser.get_methods();
     called_functions.sort();
+    
     println!("{:?}",called_functions);
     // */
 }
