@@ -7,7 +7,6 @@
 use std::collections::{HashMap,HashSet};
 use crate::compile::utils::preprocess_code;
 use super::utils::clean_node;
-
 /// Represents the two sections of a .osts script:
 /// - `fr`: the core library namespace
 /// - `main`: the user-facing entry point function
@@ -76,6 +75,7 @@ impl FrostSource {
     /// # Arguments
     ///
     /// * `step_name` - A label to identify the processing phase
+    #[allow(dead_code)]
     pub fn peek(&self, step_name: &str) {
         println!("{}:step_name", step_name);
         println!("==== FR NAMESPACE ====");
