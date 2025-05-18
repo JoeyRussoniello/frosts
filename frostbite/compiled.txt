@@ -179,17 +179,6 @@ namespace fr {
 
     export const today = toExcelDate(new Date(), false);
 
-    export function combine_dfs(dfs: DataFrame[], columnSelection: ("inner" | "outer" | "left") = "outer"): DataFrame {
-        if (dfs.length == 0) {
-            throw RangeError("Please input at least 1 DataFrame to use combine_dfs()")
-        }
-        else if (dfs.length == 1) {
-            return dfs[0];
-        }
-
-        let base_df = dfs[0];
-        return base_df.concat_all(columnSelection, ...dfs.slice(1));
-    }
 
     export function sum(nums: number[]): number {
         return nums.reduce((acc, x) => acc + x, 0);
@@ -287,156 +276,11 @@ namespace fr {
         values: Row[];
 
         
-        sum(column: string): number {
-            const values = this.__check_numeric(column);
-            return sum(values)
-        }
-
-        drop(...columnsToDrop: string[]): DataFrame {
-
-            columnsToDrop.forEach(col => this.__check_membership(col));
-
-            const newColumns = this.columns.filter(col => !columnsToDrop.includes(col));
-
-            const newValues = this.values.map(row => {
-                let newRow: Row = {};
-                newColumns.forEach(col => newRow[col] = row[col]);
-                return newRow;
-            });
-
-            const resultData = [newColumns, ...newValues.map(row => newColumns.map(col => row[col]))];
-
-            return new DataFrame(resultData);
-        }
-
-        to_worksheet(worksheet: ExcelScript.Worksheet, method: ("o" | "a") = "o") {
-
-            let export_array: CellValue[][] = this.to_array(method == "o");
-            let export_range: ExcelScript.Range;
-            let [n_rows, n_cols] = this.shape();
-
-            if (method == "o") {
-
-                worksheet.getUsedRange()?.setValue("");
-
-                export_range = worksheet.getRange("A1").getResizedRange(n_rows, n_cols - 1)
-
-                let header_range = worksheet.getRange("A1").getResizedRange(0, n_cols - 1);
-                header_range.setValues([this.columns]);
-
-                try {
-                    worksheet.addTable(export_range, true);
-                }
-                catch {
-                    console.log(`A table already exists at ${export_range.getAddressLocal()}, proceeding anyways.`);
-                }
-            }
-
-            else if (method == "a") {
-                let used_rng = worksheet.getUsedRange();
-                if (used_rng == null) {
-
-                    return this.to_worksheet(worksheet, "o");
-                }
-
-                let end_row = worksheet.getUsedRange().getLastRow()
-
-                let start_rng = end_row.getOffsetRange(1, 0).getColumn(0);
-                export_range = start_rng.getResizedRange(n_rows - 1, n_cols - 1);
-            }
-            else {
-                throw new SyntaxError("Sheet export method must either be 'o' to overwrite or 'a' to append")
-            }
-
-            export_range.setValues(export_array);
-
-            if (worksheet.getName() != DEV_SHEET_NAME) {
-                console.log(`Dataframe Written to ${export_range.getAddressLocal()}`);
-            }
-
-        }
-
-        max(column: string): number {
-            const values = this.__check_numeric(column);
-            return max(values)
-        }
-
-        rename(columnsMap: { [oldName: string]: string }, inplace: boolean = false): DataFrame {
-
-            for (let oldCol in columnsMap) {
-                this.__check_membership(oldCol);
-            }
-
-            const newColumns = this.columns.map(col => columnsMap[col] || col);
-
-            let output = new DataFrame([newColumns, ...this.to_array(false)]);
-
-            this.__assign_inplace(output, inplace)
-            return output
-        }
-
-        private __assign_properties(columns: string[], dtypes: { [key: string]: ("string" | "number" | "boolean") }, values: Row[]) {
-
-            this.columns = columns;
-            this.dtypes = dtypes;
-            this.values = values;
-            this.__headers = new Set(columns);
-        }
-
-constructor(data: CellValue[][]) {
-            let str_data = data as string[][];
-            let headers = str_data[0].map(s => s.trim());
-            str_data = str_data.slice(1);
-            this.dtypes = {};
-
-            let times_seen = {};
-            headers.forEach((header, i) => {
-                if (header in times_seen) {
-                    headers[i] = header + "_" + times_seen[header]
-                    times_seen[header] = times_seen[header] + 1;
-                }
-                times_seen[header] = 1;
-            })
-
-            this.columns = headers;
-            this.__headers = new Set(this.columns);
-            this.values = []
-            for (let row of str_data) {
-                let row_values: Row = {};
-                headers.forEach((header, i) => row_values[header] = row[i]);
-                this.values.push(row_values);
-            }
-
-            headers.forEach((header, col_idx) => {
-                this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]))
-                if (this.dtypes[header] != "string" && this.values.length > 0 && typeof (this.values[0][header]) == "string") {
-
-                    this.values.map(row => row[header] = parseValue(row[header], this.dtypes[header]));
-                }
-            });
-        }
-
-        iterrows(): [Row, number][] {
-            return this.values.map((row, idx) => [row, idx]);
-        }
-
         private __check_membership(key: string) {
             if (!(this.__headers.has(key))) {
                 throw RangeError(`Key: "${key}" not found in df.\nDf Headers: ${this.columns}`);
             }
         }
-
-        count(column: string): number {
-            this.__check_membership(column);
-
-            return this.values.filter(row => row[column] !== null && row[column] !== undefined && row[column] !== "").length;
-        }
-
-        private __assign_inplace(other: DataFrame, inplace: boolean) {
-            if (inplace) {
-                this.__assign_properties(...other.__extract_properties());
-            }
-        };
 
         groupBy(group_keys: string[] | string, aggregations: { [col: string]: Operation | Operation[] }): DataFrame {
             type Operation = "sum" | "mean" | "count" | "min" | "max" | "std_dev";
@@ -522,6 +366,74 @@ constructor(data: CellValue[][]) {
             return new DataFrame([resultHeaders, ...resultRows]);
         }
 
+        sum(column: string): number {
+            const values = this.__check_numeric(column);
+            return sum(values)
+        }
+
+        iterrows(): [Row, number][] {
+            return this.values.map((row, idx) => [row, idx]);
+        }
+
+        copy(): DataFrame {
+
+            return new DataFrame(JSON.parse(JSON.stringify(this.to_array())));
+        }
+
+        shape(): [number, number] {
+            return [this.values.length, this.columns.length]
+        }
+
+        drop(...columnsToDrop: string[]): DataFrame {
+
+            columnsToDrop.forEach(col => this.__check_membership(col));
+
+            const newColumns = this.columns.filter(col => !columnsToDrop.includes(col));
+
+            const newValues = this.values.map(row => {
+                let newRow: Row = {};
+                newColumns.forEach(col => newRow[col] = row[col]);
+                return newRow;
+            });
+
+            const resultData = [newColumns, ...newValues.map(row => newColumns.map(col => row[col]))];
+
+            return new DataFrame(resultData);
+        }
+
+constructor(data: CellValue[][]) {
+            let str_data = data as string[][];
+            let headers = str_data[0].map(s => s.trim());
+            str_data = str_data.slice(1);
+            this.dtypes = {};
+
+            let times_seen = {};
+            headers.forEach((header, i) => {
+                if (header in times_seen) {
+                    headers[i] = header + "_" + times_seen[header]
+                    times_seen[header] = times_seen[header] + 1;
+                }
+                times_seen[header] = 1;
+            })
+
+            this.columns = headers;
+            this.__headers = new Set(this.columns);
+            this.values = []
+            for (let row of str_data) {
+                let row_values: Row = {};
+                headers.forEach((header, i) => row_values[header] = row[i]);
+                this.values.push(row_values);
+            }
+
+            headers.forEach((header, col_idx) => {
+                this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]))
+                if (this.dtypes[header] != "string" && this.values.length > 0 && typeof (this.values[0][header]) == "string") {
+
+                    this.values.map(row => row[header] = parseValue(row[header], this.dtypes[header]));
+                }
+            });
+        }
+
         to_array(headers: boolean = true): CellValue[][] {
             if (headers) {
                 return [this.columns, ...this.values.map(row => Object.values(row))];
@@ -531,27 +443,34 @@ constructor(data: CellValue[][]) {
             }
         }
 
-        min(column: string): number {
-            const values = this.__check_numeric(column);
-            return min(values)
-        }
-
-        mean(column: string): number {
-            const values = this.__check_numeric(column);
-            return mean(values)
-        }
-
-        shape(): [number, number] {
-            return [this.values.length, this.columns.length]
-        }
-
         private __extract_properties(): [string[], { [key: string]: ("string" | "number" | "boolean") }, Row[]] {
 
             return [this.columns, this.dtypes, this.values];
         }
 
-        apply<T>(fn: (row: FrostRow) => T): T[] {
-            return this.values.map(row => fn(toFrostRow(row)));
+        filter(key: string, predicate: (value: CellValue) => boolean, inplace: boolean = false): DataFrame {
+
+            this.__check_membership(key);
+
+            const filteredValues = this.values.filter(row => predicate(row[key]));
+
+            let output = new DataFrame([this.columns, ...filteredValues.map(row => this.columns.map(col => row[col]))]);
+
+            this.__assign_inplace(output, inplace);
+            return output;
+        }
+
+        min(column: string): number {
+            const values = this.__check_numeric(column);
+            return min(values)
+        }
+
+        private __assign_properties(columns: string[], dtypes: { [key: string]: ("string" | "number" | "boolean") }, values: Row[]) {
+
+            this.columns = columns;
+            this.dtypes = dtypes;
+            this.values = values;
+            this.__headers = new Set(columns);
         }
 
         private __check_numeric(column: string): number[] {
@@ -567,6 +486,83 @@ constructor(data: CellValue[][]) {
                 .filter(val => typeof val === "number") as number[];
         }
 
+        rename(columnsMap: { [oldName: string]: string }, inplace: boolean = false): DataFrame {
+
+            for (let oldCol in columnsMap) {
+                this.__check_membership(oldCol);
+            }
+
+            const newColumns = this.columns.map(col => columnsMap[col] || col);
+
+            let output = new DataFrame([newColumns, ...this.to_array(false)]);
+
+            this.__assign_inplace(output, inplace)
+            return output
+        }
+
+        apply<T>(fn: (row: FrostRow) => T): T[] {
+            return this.values.map(row => fn(toFrostRow(row)));
+        }
+
+        to_worksheet(worksheet: ExcelScript.Worksheet, method: ("o" | "a") = "o") {
+
+            let export_array: CellValue[][] = this.to_array(method == "o");
+            let export_range: ExcelScript.Range;
+            let [n_rows, n_cols] = this.shape();
+
+            if (method == "o") {
+
+                worksheet.getUsedRange()?.setValue("");
+
+                export_range = worksheet.getRange("A1").getResizedRange(n_rows, n_cols - 1)
+
+                let header_range = worksheet.getRange("A1").getResizedRange(0, n_cols - 1);
+                header_range.setValues([this.columns]);
+
+                try {
+                    worksheet.addTable(export_range, true);
+                }
+                catch {
+                    console.log(`A table already exists at ${export_range.getAddressLocal()}, proceeding anyways.`);
+                }
+            }
+
+            else if (method == "a") {
+                let used_rng = worksheet.getUsedRange();
+                if (used_rng == null) {
+
+                    return this.to_worksheet(worksheet, "o");
+                }
+
+                let end_row = worksheet.getUsedRange().getLastRow()
+
+                let start_rng = end_row.getOffsetRange(1, 0).getColumn(0);
+                export_range = start_rng.getResizedRange(n_rows - 1, n_cols - 1);
+            }
+            else {
+                throw new SyntaxError("Sheet export method must either be 'o' to overwrite or 'a' to append")
+            }
+
+            export_range.setValues(export_array);
+
+            if (worksheet.getName() != DEV_SHEET_NAME) {
+                console.log(`Dataframe Written to ${export_range.getAddressLocal()}`);
+            }
+
+        }
+
+        count(column: string): number {
+            this.__check_membership(column);
+
+            return this.values.filter(row => row[column] !== null && row[column] !== undefined && row[column] !== "").length;
+        }
+
+        private __assign_inplace(other: DataFrame, inplace: boolean) {
+            if (inplace) {
+                this.__assign_properties(...other.__extract_properties());
+            }
+        };
+
         std_dev(column: string, bessel: boolean = true): number {
             const values = this.__check_numeric(column);
             const n = values.length;
@@ -580,21 +576,9 @@ constructor(data: CellValue[][]) {
             );
         }
 
-        filter(key: string, predicate: (value: CellValue) => boolean, inplace: boolean = false): DataFrame {
-
-            this.__check_membership(key);
-
-            const filteredValues = this.values.filter(row => predicate(row[key]));
-
-            let output = new DataFrame([this.columns, ...filteredValues.map(row => this.columns.map(col => row[col]))]);
-
-            this.__assign_inplace(output, inplace);
-            return output;
-        }
-
-        copy(): DataFrame {
-
-            return new DataFrame(JSON.parse(JSON.stringify(this.to_array())));
+        mean(column: string): number {
+            const values = this.__check_numeric(column);
+            return mean(values)
         }
 
         set_column(columnName: string, values: CellValue[], inplace: boolean = false): DataFrame {
@@ -617,6 +601,11 @@ constructor(data: CellValue[][]) {
             this.__assign_inplace(output, inplace);
             return output;
         };
+
+        max(column: string): number {
+            const values = this.__check_numeric(column);
+            return max(values)
+        }
 
 }
 }

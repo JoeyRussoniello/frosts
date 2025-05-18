@@ -188,28 +188,45 @@ impl FrostSource {
 
 
 impl FrostFunctionSet{
-    pub fn compile(&self, necessary_functions: &HashSet<String>) -> String{
+    pub fn compile(&self, necessary_functions: &HashSet<String>) -> String {
+        let mut cleaned_header = self.always_take.clone();
 
+        // Remove all problematic methods that are NOT used
+        for (name, body) in &self.problematic_methods {
+            if !necessary_functions.contains(name) {
+                // naive removal: just slice out the function body
+                cleaned_header = cleaned_header.replace(body, "");
+            }
+        }
+
+        // Handle apply<T> workaround
         let method_str: String = necessary_functions
             .iter()
             .map(|func| {
-                //Another workaround for the type generic
-                let call_method = match func == "apply"{
-                    true => "apply<T>",
-                    false => func 
+                let call_method = if func == "apply" {
+                    "apply<T>"
+                } else {
+                    func
                 };
 
                 self.dataframe_methods
-                .get(call_method)
-                .expect(&format!("Couldn't find method: {:?}", func))
+                    .get(call_method)
+                    .expect(&format!("Couldn't find method: {:?}, continuing with compilation...", func))
             })
             .cloned()
             .collect::<Vec<String>>()
             .join("\n");
 
-        // Return the final compiled script
-        return vec![self.always_take.clone(),method_str,String::from("}"),String::from("}"),].join("\n");
+        // Combine everything into a full script
+        vec![
+            cleaned_header,
+            method_str,
+            String::from("}"),
+            String::from("}"),
+        ]
+        .join("\n")
     }
+
 }
 #[cfg(test)]
 mod tests {
@@ -353,5 +370,27 @@ mod tests {
         assert!(frost_set.problematic_methods.contains_key("combine_dfs"));
         assert!(frost_set.dataframe_methods.contains_key("filter"));
         assert!(!frost_set.dataframe_methods.contains_key("combine_dfs"));
+    }
+
+    #[test]
+    fn compile_does_not_include_unnecessary_problematic_methods() {
+        let frost_set = FrostFunctionSet {
+            always_take: "export function combine_dfs(...) {\n    return 'test';\n}\nlet unused = 1;".to_string(),
+            dataframe_methods: {
+                let mut hm = HashMap::new();
+                hm.insert("filter".to_string(), "filter() { return this; }".to_string());
+                hm
+            },
+            problematic_methods: {
+                let mut hm = HashMap::new();
+                hm.insert("combine_dfs".to_string(), "export function combine_dfs(...) {\n    return 'test';\n}\n".to_string());
+                hm
+            },
+        };
+
+        let output = frost_set.compile(&["filter".to_string()].into_iter().collect());
+
+        assert!(!output.contains("combine_dfs"));
+        assert!(output.contains("filter()"));
     }
 }
