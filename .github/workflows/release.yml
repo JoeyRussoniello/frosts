@@ -27,8 +27,14 @@ jobs:
             target: x86_64-pc-windows-gnu
     
     steps:
-      - name: Clone Clone Repository
+      - name: Clone Repository
         uses: actions/checkout@v3
+      
+      #Linux musl proper install
+      - name: Install musl tools (Linux only)
+        shell: bash
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
