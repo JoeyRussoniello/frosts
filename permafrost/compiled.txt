@@ -1,0 +1,671 @@
+namespace fr {
+    let SEPARATOR = "~~~";
+    export let TYPE_DETECTION_SAMPLE_SIZE = 100;
+    const DEV_SHEET_NAME = "___DEV_SHEET_NULL#859132";
+
+    export function get_separator(): string {
+        return SEPARATOR;
+    }
+
+    export function set_separator(separator: string) {
+        SEPARATOR = separator;
+    }
+
+    export function set_type_detection_sample_size(new_size: number) {
+        TYPE_DETECTION_SAMPLE_SIZE = new_size;
+    }
+
+    function column_violates_separator(key: string) {
+        if (key.includes(get_separator())) {
+            throw new Error(`Input key: ${key} contains the interal frost separator ${get_separator()}, this may cause unintended behavior. \n Please modify the column name using df.rename(), or change the separator value using the fr.set_separator()`);
+        }
+    }
+
+    function detectTypeFromString(s: string): ("string" | "number" | "boolean") {
+        if (!s) {
+            s = "";
+        }
+        s = s.toString();
+        if (/^-?\d+(\.\d+)?$/.test(s) || s == "") {
+            return "number";
+        }
+        if (['true', 'false'].includes(s.toLocaleLowerCase())) {
+            return "boolean"
+        }
+        else {
+            return "string"
+        }
+    }
+
+    function detectColumn(col: string[]): ("string" | "number" | "boolean") {
+        let sample: string[];
+
+        if (col.length <= TYPE_DETECTION_SAMPLE_SIZE) {
+            sample = col;
+        } else {
+            const half = TYPE_DETECTION_SAMPLE_SIZE / 2;
+            sample = col.slice(0, half).concat(col.slice(-half));
+        }
+
+        const types = sample.map(v => detectTypeFromString(v));
+        const uniqueTypes = Array.from(new Set(types));
+
+        return uniqueTypes.length === 1 ? uniqueTypes[0] : "string";
+    }
+    function parseValue(input: CellValue, parse_method: ("string" | "number" | "boolean")): CellValue {
+        switch (parse_method) {
+            case "string": return input.toString();
+            case "boolean": return input.toString() == "true";
+            case "number": return parseFloat(input.toString());
+            default: throw SyntaxError("Error parsing value: parsing method must be either 'string','boolean',or 'number'");
+        }
+    }
+
+    export function read_range(range: ExcelScript.Range): DataFrame {
+        return new DataFrame(range.getValues());
+    }
+
+    export function read_sheet(Sheet: ExcelScript.Worksheet): DataFrame {
+        let rng = Sheet.getUsedRange();
+        if (!rng) {
+            throw new Error(`Input Sheet "${Sheet.getName()}" is empty, unable to create DataFrame`);
+        }
+        return read_range(rng);
+    }
+
+    export function read_json(json: string): DataFrame {
+
+        return new DataFrame(JSON.parse(json))
+    }
+
+    export function read_after(Sheet: ExcelScript.Worksheet, n_rows: number, n_cols: number) {
+        let rng = Sheet.getUsedRange();
+        let new_rng = rng.getOffsetRange(n_rows, n_cols).getUsedRange();
+        return read_range(new_rng);
+    }
+
+    function remove_chars_within_quotes(longtext: string): string {
+
+        let stklen = 0;
+        let newstring = ""
+        for (let i = 0; i < longtext.length; i++) {
+            let char = longtext[i];
+
+            if (char == '"') {
+                if (stklen == 0) {
+                    stklen = 1;
+                }
+                else {
+                    stklen = 0;
+                }
+                newstring += ""
+            }
+
+            else if (stklen == 1 && (char == "\n" || char == ",")) {
+                if (char == ",") {
+                    newstring += ""
+                }
+                if (char == "\n") {
+                    newstring += " "
+                }
+            }
+            else {
+                newstring += char
+            }
+        }
+        return newstring
+    }
+
+    export function read_csv(input_text: string, errors: ("raise" | "coerce") = "raise", start_index: number = 0, line_separator: string = "\n"): DataFrame {
+        let cleaned_text = remove_chars_within_quotes(input_text);
+        let line_split_arr: string[] = [];
+
+        if (cleaned_text.includes(line_separator)) {
+            line_split_arr = cleaned_text.split(line_separator);
+
+            if (line_split_arr.length > 0 && line_split_arr[line_split_arr.length - 1].trim() === "") {
+                line_split_arr.pop();
+            }
+        }
+        else {
+            console.log(`No split marker in ${cleaned_text}`);
+        }
+
+        let output: string[][] = line_split_arr.map(row => row.split(","))
+
+        const maxLength = output.reduce((max, row) => Math.max(max, row.length), 0);
+        output.forEach(row => {
+            if (row.length != maxLength) {
+                if (errors == "raise") {
+                    throw new TypeError("Error in CSV parsing. Rows are not all the same size. This may cause unintended behavior\nIf this is intentional, use errors='coerce'");
+                }
+                else {
+                    while (row.length < maxLength) {
+                        row.push("");
+                    }
+                }
+            }
+        });
+        return new DataFrame(output.slice(start_index));
+    }
+
+    export function to_numeric(column: CellValue[]): number[] {
+        return column.map(row => {
+            if (row == null) {
+                return NaN
+            }
+            return parseFloat(row.toString())
+        });
+    }
+
+    export function toExcelDate(jsDate: Date, include_time: boolean = true): number {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const diffInMs = jsDate.getTime() - excelEpoch.getTime();
+        const excelSerialDate = diffInMs / (1000 * 60 * 60 * 24);
+
+        if (include_time) {
+            return excelSerialDate
+        }
+        else {
+            return Math.floor(excelSerialDate);
+        }
+    }
+
+    export function toJsDate(excelSerial: number): Date {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const msPerDay = 24 * 60 * 60 * 1000;
+        return new Date(excelEpoch.getTime() + excelSerial * msPerDay);
+    }
+
+    export const today = toExcelDate(new Date(), false);
+
+
+    export function sum(nums: number[]): number {
+        return nums.reduce((acc, x) => acc + x, 0);
+    }
+    export function count(nums: number[]): number {
+        return nums.filter(x => !isNaN(x)).length;
+    }
+    export function mean(nums: number[]): number {
+        return sum(nums) / nums.length;
+    }
+    export function min(nums: number[]): number {
+        return Math.min(...nums);
+    }
+    export function max(nums: number[]): number {
+        return Math.max(...nums);
+    }
+    export function range(nums: number[]): number {
+        return max(nums) - min(nums);
+    }
+    export function product(nums: number[]): number {
+        return nums.reduce((acc, x) => acc * x, 1);
+    }
+
+    type BooleanPredicate = (v: CellValue) => boolean;
+
+    export const predicates = {
+        is_blank: (v: CellValue) => v == "",
+        is_nan: (v: CellValue) => isNaN(Number(v)),
+
+        equal: (target: CellValue): BooleanPredicate => (v) => v == target,
+
+        includes: (substring: string): BooleanPredicate => (v) => v.toString().includes(substring),
+        starts_with: (target: string): BooleanPredicate => (v) => {
+            let value = v != null ? v.toString() : "";
+            if (value.length < target.length) { return false }
+            return value.slice(0, target.length) == target;
+        },
+        ends_with: (target: string): BooleanPredicate => (v) => {
+            let value = v != null ? v.toString() : "";
+            if (value.length < target.length) { return false }
+            return value.slice(value.length - target.length) == target;
+        }
+    };
+
+    export const not = (predicate: BooleanPredicate): BooleanPredicate => (v) => !predicate(v);
+
+    export function row_to_array(row: Row): CellValue[] {
+        return Object.values(row);
+    }
+
+    export type CellValue = string | number | boolean;
+
+    export type Row = { [key: string]: CellValue };
+    export type Operation = ("sum" | "mean" | "count" | "min" | "max" | "std_dev");
+
+    export interface FrostRow {
+        get(key: string): CellValue;
+        get_number(key: string): number;
+        get_string(key: string): string;
+        get_boolean(key: string): boolean;
+        keys(): string[];
+        raw: Row;
+    }
+
+    function toFrostRow(row: Row): FrostRow {
+        return {
+            get: (key) => row[key],
+            get_number: (key) => {
+                const val = row[key];
+                const n = Number(val);
+                if (isNaN(n)) throw new TypeError(`Value for "${key}" is not a number: ${val}`);
+                return n;
+            },
+            get_string: (key) => {
+                const val = row[key];
+                if (val == null) return "";
+                return String(val);
+            },
+            get_boolean: (key) => {
+                const val = row[key];
+                if (typeof val === "boolean") return val;
+                if (typeof val === "string") return val.toLowerCase() === "true";
+                if (typeof val === "number") return val !== 0;
+                return false;
+            },
+            keys: () => Object.keys(row),
+            raw: row
+        };
+    }
+
+    export class DataFrame {
+        columns: string[]
+        __headers: Set<string>
+        dtypes: { [key: string]: ("string" | "number" | "boolean") }
+        values: Row[];
+
+        
+        private __assign_inplace(other: DataFrame, inplace: boolean) {
+            if (inplace) {
+                this.__assign_properties(...other.__extract_properties());
+            }
+        };
+
+        std_dev(column: string, bessel: boolean = true): number {
+            const values = this.__check_numeric(column);
+            const n = values.length;
+            if (n <= 1) return NaN;
+
+            const mean = values.reduce((acc, val) => acc + val, 0) / n;
+            const divisor = bessel ? n - 1 : n;
+
+            return Math.sqrt(
+                values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / divisor
+            );
+        }
+
+        rename(columnsMap: { [oldName: string]: string }, inplace: boolean = false): DataFrame {
+
+            for (let oldCol in columnsMap) {
+                this.__check_membership(oldCol);
+            }
+
+            const newColumns = this.columns.map(col => columnsMap[col] || col);
+
+            let output = new DataFrame([newColumns, ...this.to_array(false)]);
+
+            this.__assign_inplace(output, inplace)
+            return output
+        }
+
+        to_array(headers: boolean = true): CellValue[][] {
+            if (headers) {
+                return [this.columns, ...this.values.map(row => Object.values(row))];
+            }
+            else {
+                return this.values.map(row => Object.values(row))
+            }
+        }
+
+        apply<T>(fn: (row: FrostRow) => T): T[] {
+            return this.values.map(row => fn(toFrostRow(row)));
+        }
+
+        copy(): DataFrame {
+
+            return new DataFrame(JSON.parse(JSON.stringify(this.to_array())));
+        }
+
+        shape(): [number, number] {
+            return [this.values.length, this.columns.length]
+        }
+
+        private __extract_properties(): [string[], { [key: string]: ("string" | "number" | "boolean") }, Row[]] {
+
+            return [this.columns, this.dtypes, this.values];
+        }
+
+        groupBy(group_keys: string[] | string, aggregations: { [col: string]: Operation | Operation[] }): DataFrame {
+            type Operation = "sum" | "mean" | "count" | "min" | "max" | "std_dev";
+
+            const keys: string[] = typeof group_keys === "string" ? [group_keys] : group_keys;
+            keys.forEach(key => this.__check_membership(key));
+            keys.forEach(key => column_violates_separator(key));
+
+            const valueColumns: string[] = [];
+            const aggFunctions: Operation[] = [];
+
+            for (const col in aggregations) {
+                this.__check_membership(col);
+
+                let operations = aggregations[col];
+                let ops: Operation[];
+
+                if (typeof (operations) == "string") {
+                    ops = [operations]
+                }
+                else {
+                    ops = operations;
+                }
+
+                for (const op of ops) {
+                    valueColumns.push(col);
+                    aggFunctions.push(op);
+                }
+            }
+
+            const grouped: { [groupKey: string]: Row[] } = {};
+            for (const row of this.values) {
+                const groupKey = keys.map(k => row[k]).join(SEPARATOR);
+                if (!grouped[groupKey]) grouped[groupKey] = [];
+                grouped[groupKey].push(row);
+            }
+
+            const resultHeaders: string[] = [...keys];
+            valueColumns.forEach((col, idx) => {
+                resultHeaders.push(`${col}_${aggFunctions[idx]}`);
+            });
+
+            const resultRows: CellValue[][] = [];
+
+            for (const groupKey in grouped) {
+                const groupDF = new DataFrame([this.columns, ...grouped[groupKey].map(row => this.columns.map(col => row[col]))]);
+                const keyParts = groupKey.split(SEPARATOR);
+                const resultRow: CellValue[] = [...keyParts];
+
+                valueColumns.forEach((col, idx) => {
+                    const func = aggFunctions[idx];
+                    let value: number;
+
+                    switch (func) {
+                        case "sum":
+                            value = groupDF.sum(col);
+                            break;
+                        case "mean":
+                            value = groupDF.mean(col);
+                            break;
+                        case "count":
+                            value = groupDF.count(col);
+                            break;
+                        case "min":
+                            value = groupDF.min(col);
+                            break;
+                        case "max":
+                            value = groupDF.max(col);
+                            break;
+                        case "std_dev":
+                            value = groupDF.std_dev(col);
+                            break;
+                        default:
+                            throw new Error(`Unsupported operation: ${func}`);
+                    }
+
+                    resultRow.push(value);
+                });
+
+                resultRows.push(resultRow);
+            }
+
+            return new DataFrame([resultHeaders, ...resultRows]);
+        }
+
+        mean(column: string): number {
+            const values = this.__check_numeric(column);
+            return mean(values)
+        }
+
+        private __check_numeric(column: string): number[] {
+            this.__check_membership(column);
+
+            const dtype = this.dtypes[column];
+            if (dtype !== "number") {
+                throw new TypeError(`Column "${column}" is not numeric. Detected type: "${dtype}"`);
+            }
+
+            return this.values
+                .map(row => row[column])
+                .filter(val => typeof val === "number") as number[];
+        }
+
+        iterrows(): [Row, number][] {
+            return this.values.map((row, idx) => [row, idx]);
+        }
+
+        filter(key: string, predicate: (value: CellValue) => boolean, inplace: boolean = false): DataFrame {
+
+            this.__check_membership(key);
+
+            const filteredValues = this.values.filter(row => predicate(row[key]));
+
+            let output = new DataFrame([this.columns, ...filteredValues.map(row => this.columns.map(col => row[col]))]);
+
+            this.__assign_inplace(output, inplace);
+            return output;
+        }
+
+        count(column: string): number {
+            this.__check_membership(column);
+
+            return this.values.filter(row => row[column] !== null && row[column] !== undefined && row[column] !== "").length;
+        }
+
+        drop(...columnsToDrop: string[]): DataFrame {
+
+            columnsToDrop.forEach(col => this.__check_membership(col));
+
+            const newColumns = this.columns.filter(col => !columnsToDrop.includes(col));
+
+            const newValues = this.values.map(row => {
+                let newRow: Row = {};
+                newColumns.forEach(col => newRow[col] = row[col]);
+                return newRow;
+            });
+
+            const resultData = [newColumns, ...newValues.map(row => newColumns.map(col => row[col]))];
+
+            return new DataFrame(resultData);
+        }
+
+constructor(data: CellValue[][]) {
+            let str_data = data as string[][];
+            let headers = str_data[0].map(s => s.trim());
+            str_data = str_data.slice(1);
+            this.dtypes = {};
+
+            let times_seen = {};
+            headers.forEach((header, i) => {
+                if (header in times_seen) {
+                    headers[i] = header + "_" + times_seen[header]
+                    times_seen[header] = times_seen[header] + 1;
+                }
+                times_seen[header] = 1;
+            })
+
+            this.columns = headers;
+            this.__headers = new Set(this.columns);
+            this.values = []
+            for (let row of str_data) {
+                let row_values: Row = {};
+                headers.forEach((header, i) => row_values[header] = row[i]);
+                this.values.push(row_values);
+            }
+
+            headers.forEach((header, col_idx) => {
+                this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]))
+                if (this.dtypes[header] != "string" && this.values.length > 0 && typeof (this.values[0][header]) == "string") {
+
+                    this.values.map(row => row[header] = parseValue(row[header], this.dtypes[header]));
+                }
+            });
+        }
+
+        sum(column: string): number {
+            const values = this.__check_numeric(column);
+            return sum(values)
+        }
+
+        private __assign_properties(columns: string[], dtypes: { [key: string]: ("string" | "number" | "boolean") }, values: Row[]) {
+
+            this.columns = columns;
+            this.dtypes = dtypes;
+            this.values = values;
+            this.__headers = new Set(columns);
+        }
+
+        min(column: string): number {
+            const values = this.__check_numeric(column);
+            return min(values)
+        }
+
+        max(column: string): number {
+            const values = this.__check_numeric(column);
+            return max(values)
+        }
+
+        set_column(columnName: string, values: CellValue[], inplace: boolean = false): DataFrame {
+            if (this.values.length != values.length) {
+                throw new RangeError(`DataFrame and Input Dimensions Don't Match\nDataFrame has ${this.values.length} rows, while input values have ${values.length}`);
+            }
+            let dtype = detectColumn(values.map(row => row.toString()));
+            let output = this.copy()
+
+            if (!output.columns.includes(columnName)) {
+                output.columns.push(columnName);
+                output.__headers.add(columnName);
+            }
+
+            output.dtypes[columnName] = dtype;
+            for (let [row, index] of output.iterrows()) {
+                row[columnName] = values[index];
+            }
+
+            this.__assign_inplace(output, inplace);
+            return output;
+        };
+
+        to_worksheet(worksheet: ExcelScript.Worksheet, method: ("o" | "a") = "o") {
+
+            let export_array: CellValue[][] = this.to_array(method == "o");
+            let export_range: ExcelScript.Range;
+            let [n_rows, n_cols] = this.shape();
+
+            if (method == "o") {
+
+                worksheet.getUsedRange()?.setValue("");
+
+                export_range = worksheet.getRange("A1").getResizedRange(n_rows, n_cols - 1)
+
+                let header_range = worksheet.getRange("A1").getResizedRange(0, n_cols - 1);
+                header_range.setValues([this.columns]);
+
+                try {
+                    worksheet.addTable(export_range, true);
+                }
+                catch {
+                    console.log(`A table already exists at ${export_range.getAddressLocal()}, proceeding anyways.`);
+                }
+            }
+
+            else if (method == "a") {
+                let used_rng = worksheet.getUsedRange();
+                if (used_rng == null) {
+
+                    return this.to_worksheet(worksheet, "o");
+                }
+
+                let end_row = worksheet.getUsedRange().getLastRow()
+
+                let start_rng = end_row.getOffsetRange(1, 0).getColumn(0);
+                export_range = start_rng.getResizedRange(n_rows - 1, n_cols - 1);
+            }
+            else {
+                throw new SyntaxError("Sheet export method must either be 'o' to overwrite or 'a' to append")
+            }
+
+            export_range.setValues(export_array);
+
+            if (worksheet.getName() != DEV_SHEET_NAME) {
+                console.log(`Dataframe Written to ${export_range.getAddressLocal()}`);
+            }
+
+        }
+
+        private __check_membership(key: string) {
+            if (!(this.__headers.has(key))) {
+                throw RangeError(`Key: "${key}" not found in df.\nDf Headers: ${this.columns}`);
+            }
+        }
+
+}
+}
+
+function main(workbook: ExcelScript.Workbook) {
+
+    const data = workbook.getWorksheet("Data");
+    const high_salaries = workbook.getWorksheet("High Salaries");
+    const w_income_tax = workbook.getWorksheet("With Tax");
+    const no_sensitive = workbook.getWorksheet("No SSN");
+    const frequencies = workbook.getWorksheet("Frequencies");
+
+    let csv_content = `EmployeeID,Name,Department,City,Age,Salary,Income,SSN,Address
+1001,Alice Smith,Engineering,New York,29,120000,110000,123-45-6789,123 5th Ave
+1002,Bob Johnson,HR,Los Angeles,45,85000,80000,987-65-4321,456 Sunset Blvd
+1003,Carol Lee,Engineering,New York,34,95000,92000,567-89-1234,789 Madison St
+1004,David Kim,Marketing,Chicago,38,72000,70000,234-56-7890,101 Lake Shore Dr
+1005,Eva Brown,Sales,New York,26,67000,64000,345-67-8901,234 7th Ave
+1006,Frank Wright,Sales,San Francisco,41,69000,66000,456-78-9012,555 Castro St
+1007,Grace Hall,HR,Chicago,31,91000,87000,678-90-1234,404 Wacker Dr
+1008,Henry Adams,Engineering,San Francisco,27,105000,100000,789-01-2345,808 Mission St
+1009,Ivy Clark,Marketing,Los Angeles,36,76000,74000,890-12-3456,321 Rodeo Dr
+1010,Jack Davis,Sales,New York,50,83000,80000,901-23-4567,777 Broadway
+1011,Liam Young,Engineering,Chicago,33,98000,95000,321-45-6789,999 Lakeside Dr
+1012,Mia Wilson,HR,San Francisco,42,87000,82000,876-54-3210,678 Pine St
+1013,Noah Moore,Marketing,New York,30,75000,73000,654-32-1987,345 9th Ave
+1014,Olivia Taylor,Sales,Los Angeles,28,70000,67000,543-21-9876,210 Wilshire Blvd
+1015,Paul Martinez,Engineering,Chicago,46,110000,102000,432-10-8765,890 Michigan Ave
+1016,Quinn Hernandez,HR,New York,39,92000,88000,321-98-7654,135 Lexington Ave
+1017,Rachel Perez,Marketing,San Francisco,44,88000,84000,210-87-6543,678 Castro St
+1018,Sam Roberts,Sales,Chicago,35,68000,64000,109-76-5432,321 Monroe St
+1019,Tina Evans,Engineering,Los Angeles,32,115000,108000,098-65-4321,555 Fairfax Ave
+1020,Uma Nelson,HR,San Francisco,37,86000,82000,087-54-3210,109 Van Ness Ave
+`
+
+    let df = fr.read_csv(csv_content,"coerce");
+
+    df.to_worksheet(data,'o')
+
+    df
+        .filter("Salary", v => v > 100_000)
+        .to_worksheet(high_salaries,'o')
+
+    let income_tax = df.apply(row => row.get_number("Income") * 0.3);
+    df
+        .set_column("Income Tax",income_tax)
+        .to_worksheet(w_income_tax,'o')
+
+    df
+        .drop("SSN","Address")
+        .to_worksheet(no_sensitive,"o");
+
+    df
+        .groupBy(
+            ['City',"Department"],
+            {"Salary":['mean','count']}
+        )
+        .rename({
+            "Salary_mean":"Average Salary",
+            "Salary_count":"Num Employees"
+        })
+        .to_worksheet(frequencies,"o");
+}
