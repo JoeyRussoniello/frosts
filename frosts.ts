@@ -960,10 +960,7 @@ namespace fr {
          *
          * @returns A new DataFrame with aggregated results.
          */
-        groupBy(
-            group_keys: string[] | string,
-            aggregations: { [col: string]: Operation | Operation[] }
-        ): DataFrame {
+        groupBy(group_keys: string[] | string,aggregations: { [col: string]: Operation | Operation[]}): DataFrame {
             type Operation = "sum" | "mean" | "count" | "min" | "max" | "std_dev";
 
             const keys: string[] = typeof group_keys === "string" ? [group_keys] : group_keys;
@@ -1482,10 +1479,7 @@ namespace fr {
             return this.values.map(row => fn(toFrostRow(row)));
         }
 
-        private __apply_typed<T>(
-            fn: (row: { [key: string]: T }) => T,
-            caster: (v: CellValue) => T
-        ): T[] {
+        private __apply_typed<T>(fn: (row: { [key: string]: T }) => T, caster: (v: CellValue) => T): T[] {
             return this.values.map(original_row => {
                 const typed_row: { [key: string]: T } = {};
                 Object.entries(original_row).forEach(([key, value]) => {
@@ -1806,12 +1800,7 @@ namespace fr {
          * @param keepHeaders - Boolean on whether you'd like to keep the rows flagged as headers in the output DataFrame.
          * @returns A new DataFrame with the header values encoded in the new column
          */
-        encode_headers(
-            columnName: string,
-            isHeaderRow: (row: FrostRow) => boolean,
-            extractValue: (row: FrostRow) => CellValue,
-            keepHeaders: boolean = false
-        ): DataFrame {
+        encode_headers(columnName: string, isHeaderRow: (row: FrostRow) => boolean, extractValue: (row: FrostRow) => CellValue,keepHeaders: boolean = false): DataFrame {
             let current_header: CellValue = "";
 
             const series = this.apply(row => {
@@ -1842,5 +1831,5 @@ namespace fr {
 function main(workbook: ExcelScript.Workbook) {
     // See full documentation at: https://joeyrussoniello.github.io/frosts/
     // YOUR CODE GOES HERE
-
+    
 }
