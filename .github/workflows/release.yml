@@ -46,8 +46,7 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --verbose --release --target ${{ matrix.target }}
-          working-directory: permafrost
+          args: --verbose --release --target ${{ matrix.target }} --manifest-path permafrost/Cargo.toml #Explictly declare toml path
       
       - name: Build archive
         shell: bash
