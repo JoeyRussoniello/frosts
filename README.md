@@ -60,7 +60,11 @@ In most cases, a deployed script won’t use every method in the `frosts` namesp
    - ✅ Truncated to only the used methods
    - ✅ Copied to your clipboard for easy pasting into Office Scripts
 
-The `permafrost` compiler is still in Beta, so if you fact **any accuracy issues** please submit an issue with the content of your main function (NO FR NAMESPACE). We'll work on patching any compiler bugs as quickly as possible.
+The `permafrost` compiler is still in Beta, so if you face **any accuracy issues** please submit an issue with the content of your main function *without the `fr` namespace*, and the compiled output. We'll work on patching any compiler bugs as quickly as possible.
+
+### Example Permafrost Run
+
+![Permafrost Run Image](/docs/images/permafrost_prompt.png)
 
 ---
 
