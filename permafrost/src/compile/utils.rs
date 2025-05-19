@@ -158,13 +158,14 @@ pub fn clean_node(s: &str) -> String{
     s.strip_prefix("private").unwrap_or(s).trim().to_string()
 }
 
-
-pub fn find_file(targ: &str) -> Result<String, String> {
+pub fn find_files(targ: &str) -> Result<Vec<PathBuf>, String> {
     let dirs_to_walk = vec![
         Some(PathBuf::from(".")),
         dirs::document_dir(),
         dirs::download_dir(),
     ];
+
+    let mut matches = vec![];
 
     for maybe_dir in dirs_to_walk.into_iter().flatten() {
         for entry in WalkDir::new(maybe_dir)
@@ -172,12 +173,17 @@ pub fn find_file(targ: &str) -> Result<String, String> {
             .filter_map(Result::ok)
             .filter(|e| is_osts(e) && e.file_name().to_str().unwrap_or("").ends_with(targ))
         {
-            return Ok(entry.path().to_string_lossy().to_string());
+            matches.push(entry.path().to_path_buf());
         }
     }
 
-    Err(format!("Unable to find file {}",targ))
+    if matches.is_empty() {
+        Err(format!("Unable to find any file ending with `{}`", targ))
+    } else {
+        Ok(matches)
+    }
 }
+
 
 fn is_osts(entry: &DirEntry) -> bool {
     entry.file_type().is_file() &&

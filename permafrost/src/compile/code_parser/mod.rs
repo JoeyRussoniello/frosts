@@ -47,6 +47,24 @@ impl FunctionParser {
                 self.tracking.insert(base_var.to_string());
             }
         }
+
+        //Second pass for finding iterators
+        for tracked in &self.tracking {
+            let pattern = format!("of {}.", tracked);
+            if let Some(pos) = code.find(&pattern) {
+                let after = &code[pos + pattern.len()..];
+
+                let method = after
+                    .split(|c| c == '(' || c == ' ' || c == ')' || c == ';')
+                    .next()
+                    .unwrap_or("")
+                    .trim();
+
+                if !method.is_empty() && !is_known_dataframe_field(method) {
+                    self.functions.insert(method.to_string());
+                }
+            }
+        }
     }
 
     fn clean_methods(&mut self){
@@ -193,12 +211,21 @@ fn extract_lhs_variables(lhs: &str) -> Option<Vec<&str>> {
 
 
 fn is_token_match(code: &str, position: usize, tracked: &str) -> bool {
-    let left = code[..position].chars().rev().find(|c| !c.is_whitespace());
-    let left_valid = left.map_or(true, |c| !c.is_alphanumeric() && c != '_');
+    let before = &code[..position];
+    let after = &code[position + tracked.len()..];
 
-    let end = position + tracked.len();
-    let right = code[end..].chars().find(|c| !c.is_whitespace());
-    let right_valid = right.map_or(true, |c| !c.is_alphanumeric() && c != '_');
+    let left_char = before.chars().rev().find(|c| !c.is_whitespace());
+    let right_char = after.chars().find(|c| !c.is_whitespace());
+
+    let left_valid = match left_char {
+        Some(c) => !c.is_alphanumeric() && c != '_',
+        None => true,
+    };
+
+    let right_valid = match right_char {
+        Some(c) => !c.is_alphanumeric() && c != '_',
+        None => true,
+    };
 
     left_valid && right_valid
 }
@@ -550,4 +577,38 @@ mod tests {
         assert!(parser.functions.contains("read_csv"));
         assert!(parser.functions.contains("filter"));
     }
+
+    #[test]
+    fn parser_works_on_fr_iterators(){
+        let code = r#"
+        set_column(columnName: string, values: CellValue[], inplace: boolean = false): DataFrame {
+            if (this.values.length != values.length) {
+                throw new RangeError(`DataFrame and Input Dimensions Don't Match\nDataFrame has ${this.values.length} rows, while input values have ${values.length}`);
+            }
+            let dtype = detectColumn(values.map(row => row.toString()));
+            let output = this.copy()
+
+            if (!output.columns.includes(columnName)) {
+                output.columns.push(columnName);
+                output.__headers.add(columnName);
+            }
+
+            output.dtypes[columnName] = dtype;
+            for (let [row, index] of output.iterrows()) {
+                row[columnName] = values[index];
+            }
+
+            this.__assign_inplace(output, inplace);
+            return output;
+        };"#;
+
+        let mut parser = FunctionParser::new();
+        parser.parse(code, "this");
+        
+        assert!(parser.tracking.contains("output"));
+        assert!(parser.functions.contains("copy"));
+        assert!(parser.functions.contains("iterrows"));
+        assert!(parser.functions.contains("__assign_inplace"));
+    }
+
 }

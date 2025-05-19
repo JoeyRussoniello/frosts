@@ -61,7 +61,7 @@ impl Graph{
         let mut visited = HashSet::new();
         let mut queue: VecDeque<String> = VecDeque::new();
 
-        println!("Gathering Necessary Frost Functions: Top-level functions will not be found");
+        println!("Beginning frostbyte, gathering necessary functions...");
         for root in roots {
             if self.adj_list.contains_key(root){
                 visited.insert(root.clone());
@@ -71,9 +71,6 @@ impl Graph{
             else if root == "combine_dfs"{
                 visited.insert("concat_all".to_string());
                 queue.push_back("concat_all".to_string());
-            }
-            else {
-                println!("Entry function '{}' not found in graph ", root);
             }
         }
 
@@ -86,8 +83,10 @@ impl Graph{
                 }
             }
         }
-
+        
+        println!("");
         visited
+        
     }
     
     //Print method used for debugging
@@ -101,7 +100,7 @@ impl Graph{
 mod tests {
     use super::*;
     // Minimal FrostFunctionSet mock (already defined elsewhere in your project)
-    use crate::compile::source::FrostFunctionSet;
+    use crate::compile::source::{FrostFunctionSet};
     fn make_frost_set(methods: &[(&str, &str)]) -> FrostFunctionSet {
         let dataframe_methods = methods
             .iter()
