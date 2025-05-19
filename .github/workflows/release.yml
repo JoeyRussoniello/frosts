@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Rust
-        uses: actions/setup-rust@v1
+        uses: actions/setup-rust@v1.8.0
         with:
           rust-version: stable
 
@@ -26,20 +26,20 @@ jobs:
         run: cargo build --release
         working-directory: permafrost
 
-
       - name: Zip binary
         run: |
           mkdir -p dist
-          cp target/release/permafrost dist/
+          cp target/release/permafrost* dist/
           cd dist
           zip permafrost-${{ runner.os }}.zip permafrost*
         shell: bash
+        working-directory: permafrost  # <== MUST be here too
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: permafrost-${{ runner.os }}
-          path: dist/permafrost-${{ runner.os }}.zip
+          path: permafrost/dist/permafrost-${{ runner.os }}.zip
 
   release:
     name: Create GitHub Release
