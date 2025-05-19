@@ -22,6 +22,7 @@ impl FunctionParser {
             let assignments: Vec<&str> = self.tracking
                 .iter()
                 .filter_map(|substr| parse_assignment(line, &substr))
+                .flatten()
                 .collect();
 
             for a in assignments {
@@ -73,8 +74,10 @@ impl FunctionParser {
                 let is_boundary_valid = after.starts_with('.') || after.starts_with('[');
 
                 let is_start_valid = pos == 0 || !code[..pos].chars().last().map(|c| c.is_alphanumeric() || c == '_').unwrap_or(false);
+                let after_char = code[pos + tracked.len()..].chars().next();
+                let is_end_valid = after_char.map_or(true, |c| !c.is_alphanumeric() && c != '_');
 
-                if is_boundary_valid && is_start_valid && tracked.len() > longest_match.len() {
+                if is_boundary_valid && is_start_valid && is_end_valid && tracked.len() > longest_match.len() {
                     longest_match = tracked;
                 }
             }
@@ -135,7 +138,7 @@ impl FunctionParser {
     }
 }
 
-fn parse_assignment<'a>(line: &'a str, substr: &str) -> Option<&'a str> {
+fn parse_assignment<'a>(line: &'a str, substr: &str) -> Option<Vec<&'a str>> {
     let line = line.trim();
     if !(line.starts_with("let ") || line.starts_with("const ")) {
         return None;
@@ -149,20 +152,13 @@ fn parse_assignment<'a>(line: &'a str, substr: &str) -> Option<&'a str> {
     let lhs = parts[0].trim();
     let rhs = parts[1].trim();
 
-    // FIXED LINE:
-    if rhs.contains(substr) {
-        let var = lhs
-            .strip_prefix("let")
-            .or_else(|| lhs.strip_prefix("const"))?
-            .trim()
-            .split_whitespace()
-            .next();
-
-        return var;
+    if !rhs.contains(substr) {
+        return None;
     }
 
-    None
+    extract_lhs_variables(lhs)
 }
+
 
 /// Returns true if the method reference is actually a known DataFrame field,
 /// such as `this.values`, `this.columns`, etc.
@@ -176,6 +172,29 @@ fn is_apply_assignment(line: &str) -> bool {
     line.contains(".apply(")
 }
 
+/// Parses the left-hand side of an assignment and returns the declared variable names.
+/// Supports both single variables and array destructuring like `[a, b]`.
+fn extract_lhs_variables(lhs: &str) -> Option<Vec<&str>> {
+    let lhs_vars = lhs
+        .strip_prefix("let")
+        .or_else(|| lhs.strip_prefix("const"))?
+        .trim();
+
+    if lhs_vars.starts_with('[') && lhs_vars.ends_with(']') {
+        let cleaned = lhs_vars.trim_matches(&['[', ']'][..]);
+        let vars: Vec<&str> = cleaned
+            .split(',')
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .collect();
+        Some(vars)
+    } else {
+        // Single variable fallback
+        let var = lhs_vars.split_whitespace().next()?;
+        Some(vec![var])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -183,7 +202,7 @@ mod tests {
     #[test]
     fn test_parse_assignment() {
         let line = "let df = fr.read_sheet();";
-        assert_eq!(parse_assignment(line,"fr"), Some("df"));
+        assert_eq!(parse_assignment(line,"fr"), Some(vec!["df"]));
     }
 
     #[test]
@@ -492,5 +511,39 @@ mod tests {
         parser.parse(code, "this");
 
         assert!(parser.tracking.contains("groupDf"));
+    }
+
+    #[test]
+    fn parses_array_destructuring_assignment() {
+        let line = r#"
+            let [df1, df2] = json_inputs.map(s => fr.read_json(s));
+            let filtered = df1.filter(row => row.get_number("Issues") > 2);
+        "#;
+        let mut parser = FunctionParser::new();
+        parser.parse(line,"fr");
+        assert!(parser.tracking.contains("df1"));
+        assert!(parser.tracking.contains("df2"));
+        assert!(parser.tracking.contains("filtered"));
+        assert!(parser.functions.contains("filter"))
+    }
+
+    #[test]
+    fn tracks_multiple_variables_with_common_prefixes() {
+        let code = r#"
+            let df = fr.read_sheet();
+            let df_filtered = df.filter();
+            let df_agged = df.groupBy();
+        "#;
+
+        let mut parser = FunctionParser::new();
+        parser.parse(code, "fr");
+
+        assert!(parser.tracking.contains("df"));
+        assert!(parser.tracking.contains("df_filtered"));
+        assert!(parser.tracking.contains("df_agged"));
+
+        assert!(parser.functions.contains("read_sheet"));
+        assert!(parser.functions.contains("filter"));
+        assert!(parser.functions.contains("groupBy"));
     }
 }
