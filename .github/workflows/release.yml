@@ -14,9 +14,9 @@ jobs:
       matrix:
         # You can add more, for any target you'd like!
         include:
-          - build: linux
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
+          # - build: linux
+          #   os: ubuntu-latest
+          #   target: x86_64-unknown-linux-musl
 
           - build: macos
             os: macos-latest
@@ -50,7 +50,7 @@ jobs:
       - name: Build
         uses: actions-rs/cargo@v1
         with:
-          use-cross: true
+          #use-cross: true
           command: build
           args: --verbose --release --target ${{ matrix.target }} --manifest-path permafrost/Cargo.toml #Explictly declare toml path
       
