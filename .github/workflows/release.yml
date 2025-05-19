@@ -1,0 +1,60 @@
+name: 🛠️ Build and Release Permafrost
+
+on:
+  push:
+    tags:
+      - 'v*'  # triggers on version tags like v1.0.0
+
+jobs:
+  build:
+    name: Build permafrost binary
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      - name: Build binary
+        run: cargo build --release
+        working-directory: permafrost
+
+
+      - name: Zip binary
+        run: |
+          mkdir -p dist
+          cp target/release/permafrost dist/
+          cd dist
+          zip permafrost-${{ runner.os }}.zip permafrost*
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: permafrost-${{ runner.os }}
+          path: dist/permafrost-${{ runner.os }}.zip
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*.zip
