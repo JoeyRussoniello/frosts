@@ -276,6 +276,39 @@ namespace fr {
         values: Row[];
 
         
+        private __assign_inplace(other: DataFrame, inplace: boolean) {
+            if (inplace) {
+                this.__assign_properties(...other.__extract_properties());
+            }
+        };
+
+        std_dev(column: string, bessel: boolean = true): number {
+            const values = this.__check_numeric(column);
+            const n = values.length;
+            if (n <= 1) return NaN;
+
+            const mean = values.reduce((acc, val) => acc + val, 0) / n;
+            const divisor = bessel ? n - 1 : n;
+
+            return Math.sqrt(
+                values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / divisor
+            );
+        }
+
+        rename(columnsMap: { [oldName: string]: string }, inplace: boolean = false): DataFrame {
+
+            for (let oldCol in columnsMap) {
+                this.__check_membership(oldCol);
+            }
+
+            const newColumns = this.columns.map(col => columnsMap[col] || col);
+
+            let output = new DataFrame([newColumns, ...this.to_array(false)]);
+
+            this.__assign_inplace(output, inplace)
+            return output
+        }
+
         to_array(headers: boolean = true): CellValue[][] {
             if (headers) {
                 return [this.columns, ...this.values.map(row => Object.values(row))];
@@ -285,37 +318,8 @@ namespace fr {
             }
         }
 
-        set_column(columnName: string, values: CellValue[], inplace: boolean = false): DataFrame {
-            if (this.values.length != values.length) {
-                throw new RangeError(`DataFrame and Input Dimensions Don't Match\nDataFrame has ${this.values.length} rows, while input values have ${values.length}`);
-            }
-            let dtype = detectColumn(values.map(row => row.toString()));
-            let output = this.copy()
-
-            if (!output.columns.includes(columnName)) {
-                output.columns.push(columnName);
-                output.__headers.add(columnName);
-            }
-
-            output.dtypes[columnName] = dtype;
-            for (let [row, index] of output.iterrows()) {
-                row[columnName] = values[index];
-            }
-
-            this.__assign_inplace(output, inplace);
-            return output;
-        };
-
-        filter(key: string, predicate: (value: CellValue) => boolean, inplace: boolean = false): DataFrame {
-
-            this.__check_membership(key);
-
-            const filteredValues = this.values.filter(row => predicate(row[key]));
-
-            let output = new DataFrame([this.columns, ...filteredValues.map(row => this.columns.map(col => row[col]))]);
-
-            this.__assign_inplace(output, inplace);
-            return output;
+        apply<T>(fn: (row: FrostRow) => T): T[] {
+            return this.values.map(row => fn(toFrostRow(row)));
         }
 
         copy(): DataFrame {
@@ -325,6 +329,11 @@ namespace fr {
 
         shape(): [number, number] {
             return [this.values.length, this.columns.length]
+        }
+
+        private __extract_properties(): [string[], { [key: string]: ("string" | "number" | "boolean") }, Row[]] {
+
+            return [this.columns, this.dtypes, this.values];
         }
 
         groupBy(group_keys: string[] | string, aggregations: { [col: string]: Operation | Operation[] }): DataFrame {
@@ -411,26 +420,9 @@ namespace fr {
             return new DataFrame([resultHeaders, ...resultRows]);
         }
 
-        rename(columnsMap: { [oldName: string]: string }, inplace: boolean = false): DataFrame {
-
-            for (let oldCol in columnsMap) {
-                this.__check_membership(oldCol);
-            }
-
-            const newColumns = this.columns.map(col => columnsMap[col] || col);
-
-            let output = new DataFrame([newColumns, ...this.to_array(false)]);
-
-            this.__assign_inplace(output, inplace)
-            return output
-        }
-
-        private __assign_properties(columns: string[], dtypes: { [key: string]: ("string" | "number" | "boolean") }, values: Row[]) {
-
-            this.columns = columns;
-            this.dtypes = dtypes;
-            this.values = values;
-            this.__headers = new Set(columns);
+        mean(column: string): number {
+            const values = this.__check_numeric(column);
+            return mean(values)
         }
 
         private __check_numeric(column: string): number[] {
@@ -450,9 +442,16 @@ namespace fr {
             return this.values.map((row, idx) => [row, idx]);
         }
 
-        mean(column: string): number {
-            const values = this.__check_numeric(column);
-            return mean(values)
+        filter(key: string, predicate: (value: CellValue) => boolean, inplace: boolean = false): DataFrame {
+
+            this.__check_membership(key);
+
+            const filteredValues = this.values.filter(row => predicate(row[key]));
+
+            let output = new DataFrame([this.columns, ...filteredValues.map(row => this.columns.map(col => row[col]))]);
+
+            this.__assign_inplace(output, inplace);
+            return output;
         }
 
         count(column: string): number {
@@ -477,6 +476,83 @@ namespace fr {
 
             return new DataFrame(resultData);
         }
+
+constructor(data: CellValue[][]) {
+            let str_data = data as string[][];
+            let headers = str_data[0].map(s => s.trim());
+            str_data = str_data.slice(1);
+            this.dtypes = {};
+
+            let times_seen = {};
+            headers.forEach((header, i) => {
+                if (header in times_seen) {
+                    headers[i] = header + "_" + times_seen[header]
+                    times_seen[header] = times_seen[header] + 1;
+                }
+                times_seen[header] = 1;
+            })
+
+            this.columns = headers;
+            this.__headers = new Set(this.columns);
+            this.values = []
+            for (let row of str_data) {
+                let row_values: Row = {};
+                headers.forEach((header, i) => row_values[header] = row[i]);
+                this.values.push(row_values);
+            }
+
+            headers.forEach((header, col_idx) => {
+                this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]))
+                if (this.dtypes[header] != "string" && this.values.length > 0 && typeof (this.values[0][header]) == "string") {
+
+                    this.values.map(row => row[header] = parseValue(row[header], this.dtypes[header]));
+                }
+            });
+        }
+
+        sum(column: string): number {
+            const values = this.__check_numeric(column);
+            return sum(values)
+        }
+
+        private __assign_properties(columns: string[], dtypes: { [key: string]: ("string" | "number" | "boolean") }, values: Row[]) {
+
+            this.columns = columns;
+            this.dtypes = dtypes;
+            this.values = values;
+            this.__headers = new Set(columns);
+        }
+
+        min(column: string): number {
+            const values = this.__check_numeric(column);
+            return min(values)
+        }
+
+        max(column: string): number {
+            const values = this.__check_numeric(column);
+            return max(values)
+        }
+
+        set_column(columnName: string, values: CellValue[], inplace: boolean = false): DataFrame {
+            if (this.values.length != values.length) {
+                throw new RangeError(`DataFrame and Input Dimensions Don't Match\nDataFrame has ${this.values.length} rows, while input values have ${values.length}`);
+            }
+            let dtype = detectColumn(values.map(row => row.toString()));
+            let output = this.copy()
+
+            if (!output.columns.includes(columnName)) {
+                output.columns.push(columnName);
+                output.__headers.add(columnName);
+            }
+
+            output.dtypes[columnName] = dtype;
+            for (let [row, index] of output.iterrows()) {
+                row[columnName] = values[index];
+            }
+
+            this.__assign_inplace(output, inplace);
+            return output;
+        };
 
         to_worksheet(worksheet: ExcelScript.Worksheet, method: ("o" | "a") = "o") {
 
@@ -523,82 +599,6 @@ namespace fr {
                 console.log(`Dataframe Written to ${export_range.getAddressLocal()}`);
             }
 
-        }
-
-        private __assign_inplace(other: DataFrame, inplace: boolean) {
-            if (inplace) {
-                this.__assign_properties(...other.__extract_properties());
-            }
-        };
-
-        std_dev(column: string, bessel: boolean = true): number {
-            const values = this.__check_numeric(column);
-            const n = values.length;
-            if (n <= 1) return NaN;
-
-            const mean = values.reduce((acc, val) => acc + val, 0) / n;
-            const divisor = bessel ? n - 1 : n;
-
-            return Math.sqrt(
-                values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / divisor
-            );
-        }
-
-        sum(column: string): number {
-            const values = this.__check_numeric(column);
-            return sum(values)
-        }
-
-        private __extract_properties(): [string[], { [key: string]: ("string" | "number" | "boolean") }, Row[]] {
-
-            return [this.columns, this.dtypes, this.values];
-        }
-
-        apply<T>(fn: (row: FrostRow) => T): T[] {
-            return this.values.map(row => fn(toFrostRow(row)));
-        }
-
-constructor(data: CellValue[][]) {
-            let str_data = data as string[][];
-            let headers = str_data[0].map(s => s.trim());
-            str_data = str_data.slice(1);
-            this.dtypes = {};
-
-            let times_seen = {};
-            headers.forEach((header, i) => {
-                if (header in times_seen) {
-                    headers[i] = header + "_" + times_seen[header]
-                    times_seen[header] = times_seen[header] + 1;
-                }
-                times_seen[header] = 1;
-            })
-
-            this.columns = headers;
-            this.__headers = new Set(this.columns);
-            this.values = []
-            for (let row of str_data) {
-                let row_values: Row = {};
-                headers.forEach((header, i) => row_values[header] = row[i]);
-                this.values.push(row_values);
-            }
-
-            headers.forEach((header, col_idx) => {
-                this.dtypes[header] = detectColumn(str_data.map(row => row[col_idx]))
-                if (this.dtypes[header] != "string" && this.values.length > 0 && typeof (this.values[0][header]) == "string") {
-
-                    this.values.map(row => row[header] = parseValue(row[header], this.dtypes[header]));
-                }
-            });
-        }
-
-        max(column: string): number {
-            const values = this.__check_numeric(column);
-            return max(values)
-        }
-
-        min(column: string): number {
-            const values = this.__check_numeric(column);
-            return min(values)
         }
 
         private __check_membership(key: string) {

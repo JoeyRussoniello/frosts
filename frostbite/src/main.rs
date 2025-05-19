@@ -1,34 +1,31 @@
-//! # frostbite main
-//!
-//! Entry point for the Frostbite CLI compiler. Parses a `.osts` input file, runs preprocessing,
-//! extracts used symbols, and displays summary output. Later, this will produce a reduced `.osts`.
-
 mod osts_reader;
-mod compile; 
+mod compile;
 
-use std::{env,fs};
-//Allow peek_code to not be used without warning since it's a utility field for debugging
+use std::{env};
+use arboard::Clipboard;
+use compile::{compile_from_string,utils::find_file};
+use osts_reader::{read_file, Osts};
 
-use osts_reader::{Osts,read_file};
-use compile::compile_from_string;
 
 fn main() {
-    // Parse CLI arguments
     let args: Vec<String> = env::args().collect();
-
     if args.len() != 2 {
         eprintln!("Usage: frostbite <filename.osts>");
         std::process::exit(1);
     }
 
-    let filename = &args[1];
+    let target_file = &args[1];
+    let path = find_file(target_file).expect("Could not find the specified script.");
 
-    let content = read_file(filename);
+    println!("📄 Found script at: {}", path);
 
-    // Deserialize full .osts JSON into an Osts struct
+    let content = read_file(&path);
     let script = Osts::from_string(&content);
 
-    let compiled= compile_from_string(&script.body).expect("Unable to compile");
+    let compiled = compile_from_string(&script.body).expect("Compilation failed.");
 
-    fs::write("compiled.txt",compiled).expect("Unable to write compiled file.");
+    let mut clipboard = Clipboard::new().expect("Clipboard not available");
+    clipboard.set_text(compiled.clone()).expect("Failed to copy to clipboard");
+
+    println!("✅ Frostbite compilation complete. Output copied to clipboard.");
 }

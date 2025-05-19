@@ -1,7 +1,12 @@
+
 //! # compile::utils
 //!
 //! This module contains utility functions used throughout the Frostbite compiler,
 //! including code preview (for debugging) and preprocessing logic for cleaning Office Script code.
+
+use walkdir::{WalkDir, DirEntry};
+use std::path::PathBuf;
+use dirs;
 
 /// Prints a peek of the source code, showing the first and last `n_lines / 2`.
 /// Used for debugging transformations like splitting or stripping.
@@ -152,6 +157,37 @@ pub fn preprocess_code(code: &str) -> String {
 pub fn clean_node(s: &str) -> String{
     s.strip_prefix("private").unwrap_or(s).trim().to_string()
 }
+
+
+pub fn find_file(targ: &str) -> Result<String, String> {
+    let dirs_to_walk = vec![
+        Some(PathBuf::from(".")),
+        dirs::document_dir(),
+        dirs::download_dir(),
+    ];
+
+    for maybe_dir in dirs_to_walk.into_iter().flatten() {
+        for entry in WalkDir::new(maybe_dir)
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|e| is_osts(e) && e.file_name().to_str().unwrap_or("").ends_with(targ))
+        {
+            return Ok(entry.path().to_string_lossy().to_string());
+        }
+    }
+
+    Err(format!("Unable to find file {}",targ))
+}
+
+fn is_osts(entry: &DirEntry) -> bool {
+    entry.file_type().is_file() &&
+    entry.path()
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext_str| ext_str == "osts")
+        .unwrap_or(false)
+}
+
 
 #[cfg(test)]
 mod tests {
