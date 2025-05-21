@@ -1,6 +1,6 @@
 ---
 title: 🧹 Cleaning Data
-nav_order: 6
+nav_order: 5
 parent: The fr.DataFrame
 --- 
 
@@ -31,7 +31,7 @@ fr.predicates.predicate_name        //For predicates without inputs like is_blan
 fr.predicates.predicate_name(value) //For predicates with inputs like equals, and includes
 ```
 
-All frosts given predicates can also be negated with `fr.not()`. For example, to filter out blanks in a column you could use
+All predicates can also be negated with `fr.not()`. For example, to filter out blanks in a column you could use
 
 ```ts
 df.filter("Header",fr.not(fr.predicates.is_blank))
@@ -58,6 +58,8 @@ df.filter("Status", fr.predicates.is_blank)
 ```
 
 > **Note:** this is a equality-like `==` check, not strict equality `===` so is_blank will also match 0s and nulls, but **NOT** with `NaNs` in numeric columns.
+
+---
 
 ### `is_nan`
 
@@ -87,7 +89,7 @@ Check if row values include the `value` text
 let east_coast = df.filter("Region - Property", fr.predicates.includes("East"))
 ```
 
-Sicne the `.includes()` method only works on strings, the numeric/boolean values will be *coerced* to strings for this check.
+Since the `.includes()` method only works on strings, the numeric/boolean values will be *coerced* to strings for this check.
 
 ---
 
@@ -103,9 +105,9 @@ df.filter("Region", fr.predicates.starts_with("East"))
 
 ### `ends_with(value: string)`
 
-Similarly, to `begins_with`, checks if row values end with the `value` text
+Checks if row values end with the `value` text
 
-> For custom predicates and advanced data filtering for data cleaning, read more in the [Filtering](df_methods/filtering.md) section
+> To learn more about custom predicates and advanced data filtering, read more in the [Filtering](df_methods/filtering.md) section
 
 ---
 
@@ -219,9 +221,9 @@ Use it when your dataset has blanks that you want to automatically and consisten
 
 | Parameter       | Type                          | Description |
 |-----------------|-------------------------------|-------------|
-| `columnName`    | `string \| string[] \| "ALL"` | The name of the column (or columns) to fill. Use `"ALL"` to apply to every column. |
-| `method`        | `"prev" \| "next" \| "value"` | The strategy to use when filling missing values:<br>- `"prev"`: Fill with the previous non-null value<br>- `"next"`: Fill with the next non-null value<br>- `"value"`: Fill with a user-provided constant |
-| `value`         | `string \| number \| boolean` | Required only if `method` is `"value"`.<br>The constant value to use when replacing missing cells. Ignored for `"prev"` and `"next"` strategies. |
+| `columnName`    | `string`, `string[]`, or `"ALL"` | The name of the column (or columns) to fill. Use `"ALL"` to apply to every column. |
+| `method`        | `"prev"`, `"next"`, or `"value"` | The strategy to use when filling missing values:<br>- `"prev"`: Fill with the previous non-null value<br>- `"next"`: Fill with the next non-null value<br>- `"value"`: Fill with a user-provided constant |
+| `value`         |  `string` , `number`, or `boolean` | Required only if `method` is `"value"`.<br>The constant value to use when replacing missing cells. Ignored for `"prev"` and `"next"` strategies. |
 
 ---
 
@@ -255,7 +257,7 @@ console.log(filledWithZero.get_column("Temperature"));
 
 ### `melt(newColumnName: string, newValueName:string, ...columns:string[]): DataFrame`
 
-Many Excel datasets are structured in a **wide format**, where categories are stored as separate columns. This makes them difficult to analyze, chart, or summarize using group-by operations.
+Many Excel datasets are structured in a **wide format**, where categories are stored as separate columns. This makes them difficult to analyze, chart, or aggregate in platforms like PowerBI.
 
 The `.melt()` method solves this by transforming your data into a **long format** (also called "tidy data"), where each row represents a single observation. This is essential for:
 
@@ -340,6 +342,8 @@ Use `melt_except()` when:
 
 - You're working with datasets where the majority of columns represent measured variables.
 - It's easier to list a few columns to keep than many to melt.
+- You're working with a dynamic import whose number of column attributes may grow/shrink in size.
+  - Example: A financial report with 1 column per location.
 
 The excluded columns will remain untouched, and all others will be stacked into long format using the provided `newColumnName` and `newValueName`.
 
