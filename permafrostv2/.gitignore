@@ -1,0 +1,79 @@
+# Operating System
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# TypeScript / Node.js (extractor/)
+extractor/node_modules/
+extractor/dist/
+extractor/build/
+extractor/*.tsbuildinfo
+extractor/.nyc_output/
+extractor/coverage/
+extractor/.env
+extractor/.env.local
+extractor/.env.*.local
+
+# Rust (analyzer/)
+analyzer/target/*
+analyzer/Cargo.lock
+analyzer/**/*.rs.bk
+analyzer/.cargo/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Test files and outputs
+*.test.js
+test-output/
+examples/output/
+temp/
+tmp/
+
+# Build artifacts
+dist/
+build/
+out/
+
+# Generated files
+*.generated.*
+call-graph-*.json
+
+# Documentation builds
+docs/build/
+
+# Dependency directories
+node_modules/
+
+# Package manager files (keep package.json, ignore locks if preferred)
+# Uncomment next line if you want to ignore lock files
+# package-lock.json
+# yarn.lock
